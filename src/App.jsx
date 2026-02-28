@@ -21,6 +21,7 @@ function App() {
 
   const [barsData, setBarsData] = useState([]);
   const [running, setRunning] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   function generateBars() {
     // parse time signature
@@ -90,7 +91,15 @@ function App() {
 
   return (
     <div className="app-container">
-      <Header currentPage={currentPage} onChangePage={setCurrentPage} />
+      <Header
+        currentPage={currentPage}
+        onChangePage={(page) => {
+          setCurrentPage(page);
+          setSidebarOpen(false);
+        }}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen((o) => !o)}
+      />
       <div className="content-wrap">
         <Sidebar
           options={options}
@@ -100,6 +109,7 @@ function App() {
           onReset={handleReset}
           running={running}
           hasBars={barsData.length > 0}
+          open={sidebarOpen}
         />
         <div className="main-area">
           {currentPage === 'Home' && (

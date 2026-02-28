@@ -1,12 +1,13 @@
 import { useState } from 'react';
 
-export default function Header({ currentPage, onChangePage }) {
+export default function Header({
+  currentPage,
+  onChangePage,
+  sidebarOpen,
+  onToggleSidebar,
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pages = ['Home', 'Instructions', 'About', 'Settings'];
-
-  function toggleMenu() {
-    setMenuOpen((o) => !o);
-  }
 
   function handleSelection(page) {
     onChangePage(page);
@@ -15,8 +16,21 @@ export default function Header({ currentPage, onChangePage }) {
 
   return (
     <header className="app-header">
+      <button
+        className={`menu-toggle${sidebarOpen ? ' active' : ''}`}
+        onClick={onToggleSidebar}
+        aria-label="Toggle sidebar"
+        aria-pressed={sidebarOpen}
+        title="Settings"
+      >
+        ⚙️
+      </button>
       <h1>Rhythm Exercise</h1>
-      <button className="menu-toggle" onClick={toggleMenu} aria-label="Toggle menu">
+      <button
+        className="menu-toggle"
+        onClick={() => setMenuOpen((o) => !o)}
+        aria-label="Toggle menu"
+      >
         ☰
       </button>
       {menuOpen && (
