@@ -24,14 +24,17 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   function generateBars() {
-    // parse time signature
-    const [numStr, denStr] = options.timeSignature.split('/');
-    const numerator = parseInt(numStr, 10);
-    const denominator = parseInt(denStr, 10);
-    // value of a beat in quarter-note units: quarter=1, eighth=0.5 etc.
-    const beatValue = 4 / denominator;
-    const barLength = numerator * beatValue;
+    // map time signatures to numeric bar length values
+    const meterValues = {
+      '2/4': 2,
+      '3/4': 3,
+      '4/4': 4,
+      '3/8': 1.5,
+      '6/8': 3,
+    };
+    const barLength = meterValues[options.timeSignature] || 4;
 
+    // build list of possible notes and rests with their durations
     const choices = [];
     Object.entries(options.noteValues).forEach(([name, enabled]) => {
       if (enabled) choices.push({ type: 'note', name, duration: durationMap[name] });
@@ -44,11 +47,14 @@ function App() {
     for (let i = 0; i < options.bars; i++) {
       const bar = [];
       let sum = 0;
+      // keep adding random choices until we exactly match the meter value
       while (sum < barLength) {
-        const choice = choices[Math.floor(Math.random() * choices.length)];
-        if (!choice) break;
-        // don't pick a note that would push over the bar
-        if (sum + choice.duration > barLength) break;
+        const available = choices.filter((c) => sum + c.duration <= barLength);
+        if (available.length === 0) {
+          // no suitable choice left; break to avoid infinite loop
+          break;
+        }
+        const choice = available[Math.floor(Math.random() * available.length)];
         const noteObj = {
           ...choice,
           value: choice.name,
