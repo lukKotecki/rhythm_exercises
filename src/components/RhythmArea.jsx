@@ -9,6 +9,8 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const rafRef = useRef(null);
+  const [currentBeat, setCurrentBeat] = useState(-1);
+  const [currentBar, setCurrentBar] = useState(-1);
 
   // compute onsets for the expected rhythm
   const expectedOnsets = useRef([]);
@@ -64,6 +66,9 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
         stopMetronome();
         return;
       }
+
+      setCurrentBeat(beat % beatsPerBar);
+      setCurrentBar(Math.floor(beat / beatsPerBar));
 
       const osc = audioCtx.current.createOscillator();
       // accent on first beat of bar
@@ -174,27 +179,48 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
         <p>Press "Start" to generate rhythm.</p>
       ) : (
         <div className="bars">
-          {barsData.map((bar, i) => (
-            <div key={i} className="bar">
-              {/* accent marker at beginning */}
-              <span className="accent-marker">&gt;</span>
-              {(() => {
-                const barDur = bar.reduce((a, n) => a + n.duration, 0);
-                return bar.map((note, j) => {
-                  const pct = barDur > 0 ? (note.duration / barDur) * 100 : 0;
-                  return (
+          {barsData.map((bar, i) => {
+            // compute beats per bar for rendering
+            let beats = 4;
+            if (timeSignature) {
+              const [numStr] = timeSignature.split('/');
+              const n = parseInt(numStr, 10);
+              if (!isNaN(n)) beats = n;
+            }
+            const isActiveBar = i === currentBar;
+            return (
+              <div key={i} className="bar-wrapper">
+                <div className="bar">
+                  <span className="accent-marker">&gt;</span>
+                  {(() => {
+                    return bar.map((note, j) => {
+                      const widthCm = note.duration;
+                      return (
+                        <span
+                          key={j}
+                          className={`note ${note.type}${note.accent ? ' accent' : ''}`}
+                          style={{ width: `${widthCm}cm`, flex: '0 0 auto' }}
+                        >
+                          {note.symbol || note.value}
+                        </span>
+                      );
+                    });
+                  })()}
+                </div>
+                <div className="count-bar">
+                  {i === 0 && timeSignature && <span className="meter">{timeSignature}</span>}
+                  {Array.from({ length: beats }, (_, j) => (
                     <span
                       key={j}
-                      className={`note ${note.type}${note.accent ? ' accent' : ''}`}
-                      style={{ flexBasis: `${pct}%` }}
+                      className={`count${isActiveBar && currentBeat === j ? ' active' : ''}`}
                     >
-                      {note.symbol || note.value}
+                      {j + 1}
                     </span>
-                  );
-                });
-              })()}
-            </div>
-          ))}
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
       {results.length > 0 && (
