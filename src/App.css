@@ -352,28 +352,31 @@
 }
 
 .count-bar {
-  display: flex;
-  align-items: center;
+  position: relative;
   padding: 0.25rem 0.5rem;
   font-size: 1rem;
   color: #cbd5e1;
   width: 100%;
-  justify-content: space-between;
+  height: 1.5rem; /* enough for count text */
 }
 
 .bar-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: flex-end; /* keep count under end of bar */
+  align-items: stretch;
 }
 
 .count-bar .meter {
-  margin-right: 0.5rem;
+  position: absolute;
+  left: -2.2cm; /* put meter to left of first count */
   font-weight: 600;
 }
 
 .count-bar .count {
-  /* allow flex to distribute numbers evenly */
+  position: absolute;
+  top: 0;
+  width: 1cm;
+  text-align: center;
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
   transition: background 0.2s;
@@ -424,10 +427,17 @@
 }
 
 .note {
-  margin-left: 0.25rem;
+  flex: 1;
   color: #f1f5f9;
-  display: inline-block;
-  white-space: nowrap;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem; /* larger notes */
+  transition: box-shadow 0.2s;
+}
+
+.note.active {
+  box-shadow: 0 0 8px 2px rgba(255,255,255,0.6);
 }
 
 .note.rest {

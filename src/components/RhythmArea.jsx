@@ -191,14 +191,14 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
             return (
               <div key={i} className="bar-wrapper">
                 <div className="bar">
-                  <span className="accent-marker">&gt;</span>
                   {(() => {
                     return bar.map((note, j) => {
                       const widthCm = note.duration;
+                      const isActiveNote = i === currentBar && j === currentBeat;
                       return (
                         <span
                           key={j}
-                          className={`note ${note.type}${note.accent ? ' accent' : ''}`}
+                          className={`note ${note.type}${note.accent ? ' accent' : ''}${isActiveNote ? ' active' : ''}`}
                           style={{ width: `${widthCm}cm`, flex: '0 0 auto' }}
                         >
                           {note.symbol || note.value}
@@ -208,11 +208,14 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
                   })()}
                 </div>
                 <div className="count-bar">
-                  {i === 0 && timeSignature && <span className="meter">{timeSignature}</span>}
+                  {i === 0 && timeSignature && (
+                    <span className="meter">{timeSignature}</span>
+                  )}
                   {Array.from({ length: beats }, (_, j) => (
                     <span
                       key={j}
                       className={`count${isActiveBar && currentBeat === j ? ' active' : ''}`}
+                      style={{ left: `${j}cm` }}
                     >
                       {j + 1}
                     </span>

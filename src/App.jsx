@@ -24,15 +24,16 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   function generateBars() {
-    // map time signatures to numeric bar length values
-    const meterValues = {
-      '2/4': 2,
-      '3/4': 3,
-      '4/4': 4,
-      '3/8': 1.5,
-      '6/8': 3,
-    };
-    const barLength = meterValues[options.timeSignature] || 4;
+    // determine beats per bar (quarter notes) from the numerator of timeSignature
+    let beatsPerBar = 4;
+    if (options.timeSignature) {
+      const [numStr] = options.timeSignature.split('/');
+      const n = parseInt(numStr, 10);
+      if (!isNaN(n)) beatsPerBar = n;
+    }
+
+    // convert bar length to quarter-note count (not needed internally)
+    const barLength = beatsPerBar;
 
     // build list of possible notes and rests with their durations
     const choices = [];
@@ -67,15 +68,18 @@ function App() {
       bars.push(bar);
     }
 
-    // insert an empty bar at start for warm-up (accent on rest)
-    const emptyBar = [{
-      type: 'rest',
-      name: 'warmup',
-      duration: barLength,
-      value: '',
-      symbol: '',
-      accent: true,
-    }];
+    // insert a warm-up bar at start filled with quarter-note rests
+    const emptyBar = [];
+    for (let beat = 0; beat < beatsPerBar; beat++) {
+      emptyBar.push({
+        type: 'rest',
+        name: 'quarter',
+        duration: 1,
+        value: '',
+        symbol: mapSymbol({ type: 'rest', name: 'quarter' }),
+        accent: beat === 0,
+      });
+    }
     setBarsData([emptyBar, ...bars]);
   }
 
