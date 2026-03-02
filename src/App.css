@@ -405,17 +405,29 @@
   min-width: 40px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   background: #1e293b;
   border-radius: 6px;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   font-size: 0.9rem;
+  position: relative;
+  overflow: hidden;
+  gap: 0;
 }
 
 .bar:hover {
   border-color: #818cf8;
   box-shadow: 0 4px 12px rgba(129, 140, 248, 0.2);
+}
+
+.bar-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(71, 85, 105, 0.5);
+  pointer-events: none;
 }
 
 @media (min-width: 768px) {
@@ -427,7 +439,9 @@
 }
 
 .note {
-  flex: 1;
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
   color: #f1f5f9;
   display: flex;
   justify-content: center;

@@ -180,17 +180,32 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
       ) : (
         <div className="bars">
           {barsData.map((bar, i) => {
-            // compute beats per bar for rendering
+            // compute beats per bar and beat value from time signature
             let beats = 4;
+            let beatValue = 1; // quarter note = 1cm
             if (timeSignature) {
-              const [numStr] = timeSignature.split('/');
+              const [numStr, denomStr] = timeSignature.split('/');
               const n = parseInt(numStr, 10);
+              const d = parseInt(denomStr, 10);
               if (!isNaN(n)) beats = n;
+              // beat value depends on denominator: 4 = quarter (1), 8 = eighth (0.5), etc.
+              if (!isNaN(d)) beatValue = 4 / d;
             }
             const isActiveBar = i === currentBar;
             return (
               <div key={i} className="bar-wrapper">
                 <div className="bar">
+                  {/* grid dividers at beat boundaries */}
+                  {Array.from({ length: beats - 1 }, (_, divIdx) => {
+                    const divPosition = (divIdx + 1) * beatValue;
+                    return (
+                      <div
+                        key={`div-${divIdx}`}
+                        className="bar-divider"
+                        style={{ left: `${divPosition}cm` }}
+                      />
+                    );
+                  })}
                   {(() => {
                     return bar.map((note, j) => {
                       const widthCm = note.duration;
