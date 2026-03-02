@@ -53,8 +53,18 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
       const n = parseInt(numStr, 10);
       if (!isNaN(n)) beatsPerBar = n;
     }
+    // determine how many metronome ticks we expect: one beat per quarter-note
+    // multiplied by number of bars in barsData (includes warm‑up bar at start).
+    // Example: default 4/4 with 4 bars → barsData.length == 5 → totalBeats = 20.
     let beat = 0;
+    const totalBeats = beatsPerBar * barsData.length;
     intervalRef.current = setInterval(() => {
+      // stop once we've played the requested number of beats
+      if (beat >= totalBeats) {
+        stopMetronome();
+        return;
+      }
+
       const osc = audioCtx.current.createOscillator();
       // accent on first beat of bar
       if (beat % beatsPerBar === 0) {
@@ -139,16 +149,19 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
   }, [barsData, running]);
 
   // when running toggled off (pause), rewind progress but keep bars
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  // only clear the history if the exercise was stopped before finishing;
+  // if we've reached the end of the rhythm the results should remain visible.
   useEffect(() => {
     if (!running && barsData.length > 0) {
-      // reset click/results but keep bars shown
-      setClicks([]);
-      setResults([]);
-      nextExpectedIdx.current = 0;
+      // if we haven't yet played the whole duration, wipe the clicks/results
+      if (elapsed < totalDuration) {
+        setClicks([]);
+        setResults([]);
+        nextExpectedIdx.current = 0;
+      }
       stopMetronome();
     }
-  }, [running, barsData]);
+  }, [running, barsData, elapsed, totalDuration]);
 
   return (
     <main
