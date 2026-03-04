@@ -194,10 +194,10 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
             const isActiveBar = i === currentBar;
             return (
               <div key={i} className="bar-wrapper">
-                <div className="bar" style={{ width: `${beats * beatValue * 3}cm` }}>
-                  {/* beat-box visual containers - width = beatValue * 3cm */}
+                <div className="bar" style={{ width: `${beats * beatValue * 3.3}cm` }}>
+                  {/* beat-box visual containers - width = beatValue * 3.3cm */}
                   {Array.from({ length: beats }, (_, beatIdx) => {
-                    const beatBoxWidthCm = beatValue * 3;
+                    const beatBoxWidthCm = beatValue * 3.3;
                     const isActiveBeatBox = i === currentBar && beatIdx === currentBeat;
                     return (
                       <div
@@ -214,10 +214,10 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
                     );
                   })}
                   {(() => {
-                    const beatBoxWidthCm = beatValue * 3;
+                    const beatBoxWidthCm = beatValue * 3.3;
                     return bar.map((note, j) => {
                       // Width in cm: note duration scaled to beat-box width
-                      // beatBoxWidth = beatValue * 3cm, represents beatValue quarter-notes
+                      // beatBoxWidth = beatValue * 3.3cm, represents beatValue quarter-notes
                       // So: width = (note.duration / beatValue) * beatBoxWidth
                       const widthCm = (note.duration / beatValue) * beatBoxWidthCm;
                       return (
@@ -232,12 +232,12 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
                     });
                   })()}
                 </div>
-                <div className="count-bar" style={{ width: `${beats * beatValue * 3}cm` }}>
+                <div className="count-bar" style={{ width: `${beats * beatValue * 3.3}cm` }}>
                   {i === 0 && timeSignature && (
                     <span className="meter">{timeSignature}</span>
                   )}
                   {Array.from({ length: beats }, (_, j) => {
-                    const beatBoxWidthCm = beatValue * 3;
+                    const beatBoxWidthCm = beatValue * 3.3;
                     const countPosition = j * beatBoxWidthCm + beatBoxWidthCm / 2;
                     return (
                       <span

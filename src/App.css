@@ -467,7 +467,7 @@
   justify-content: flex-start;
   align-items: center;
   font-size: 1.5rem; /* larger notes */
-  padding-left: 0.05cm;
+  padding-left: 0.04cm;
   transition: all 0.2s;
 }
 
