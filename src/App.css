@@ -356,8 +356,8 @@
   padding: 0.25rem 0.5rem;
   font-size: 1rem;
   color: #cbd5e1;
-  width: 100%;
-  height: 1.5rem; /* enough for count text */
+  height: 1.5rem;
+  box-sizing: border-box;
 }
 
 .bar-wrapper {
@@ -375,11 +375,12 @@
 .count-bar .count {
   position: absolute;
   top: 0;
-  width: 1cm;
   text-align: center;
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
   transition: background 0.2s;
+  width: 1.5cm;
+  transform: translateX(-50%);
 }
 
 .count-bar .count.active {
@@ -400,11 +401,11 @@
 }
 
 .bar {
-  padding: 0.5rem;
+  padding: 0;
   border: 2px solid #475569;
   min-width: 40px;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
   background: #1e293b;
   border-radius: 6px;
@@ -414,6 +415,8 @@
   position: relative;
   overflow: hidden;
   gap: 0;
+  height: 2.5rem;
+  box-sizing: border-box;
 }
 
 .bar:hover {
@@ -430,9 +433,26 @@
   pointer-events: none;
 }
 
+.beat-box {
+  border-right: 2px solid rgba(71, 85, 105, 0.6);
+  background: rgba(99, 102, 241, 0.05);
+  pointer-events: none;
+  height: 100%;
+  transition: all 0.2s ease;
+}
+
+.beat-box.active {
+  background: rgba(99, 102, 241, 0.25);
+  box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.5);
+}
+
+.beat-box:last-child {
+  border-right: 1px solid rgba(71, 85, 105, 0.6);
+}
+
 @media (min-width: 768px) {
   .bar {
-    padding: 0.75rem;
+    padding: 0;
     min-width: 50px;
     font-size: 1rem;
   }
@@ -444,14 +464,15 @@
   flex: 0 0 auto;
   color: #f1f5f9;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   font-size: 1.5rem; /* larger notes */
-  transition: box-shadow 0.2s;
+  padding-left: 0.05cm;
+  transition: all 0.2s;
 }
 
 .note.active {
-  box-shadow: 0 0 8px 2px rgba(255,255,255,0.6);
+  /* no shadow - beat-box will be highlighted instead */
 }
 
 .note.rest {

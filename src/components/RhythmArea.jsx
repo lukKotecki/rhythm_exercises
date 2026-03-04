@@ -194,26 +194,36 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
             const isActiveBar = i === currentBar;
             return (
               <div key={i} className="bar-wrapper">
-                <div className="bar">
-                  {/* grid dividers at beat boundaries */}
-                  {Array.from({ length: beats - 1 }, (_, divIdx) => {
-                    const divPosition = (divIdx + 1) * beatValue;
+                <div className="bar" style={{ width: `${beats * beatValue * 3}cm` }}>
+                  {/* beat-box visual containers - width = beatValue * 3cm */}
+                  {Array.from({ length: beats }, (_, beatIdx) => {
+                    const beatBoxWidthCm = beatValue * 3;
+                    const isActiveBeatBox = i === currentBar && beatIdx === currentBeat;
                     return (
                       <div
-                        key={`div-${divIdx}`}
-                        className="bar-divider"
-                        style={{ left: `${divPosition}cm` }}
+                        key={`beat-box-${beatIdx}`}
+                        className={`beat-box${isActiveBeatBox ? ' active' : ''}`}
+                        style={{
+                          position: 'absolute',
+                          left: `${beatIdx * beatBoxWidthCm}cm`,
+                          top: 0,
+                          bottom: 0,
+                          width: `${beatBoxWidthCm}cm`,
+                        }}
                       />
                     );
                   })}
                   {(() => {
+                    const beatBoxWidthCm = beatValue * 3;
                     return bar.map((note, j) => {
-                      const widthCm = note.duration;
-                      const isActiveNote = i === currentBar && j === currentBeat;
+                      // Width in cm: note duration scaled to beat-box width
+                      // beatBoxWidth = beatValue * 3cm, represents beatValue quarter-notes
+                      // So: width = (note.duration / beatValue) * beatBoxWidth
+                      const widthCm = (note.duration / beatValue) * beatBoxWidthCm;
                       return (
                         <span
                           key={j}
-                          className={`note ${note.type}${note.accent ? ' accent' : ''}${isActiveNote ? ' active' : ''}`}
+                          className={`note ${note.type}${note.accent ? ' accent' : ''}`}
                           style={{ width: `${widthCm}cm`, flex: '0 0 auto' }}
                         >
                           {note.symbol || note.value}
@@ -222,19 +232,23 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
                     });
                   })()}
                 </div>
-                <div className="count-bar">
+                <div className="count-bar" style={{ width: `${beats * beatValue * 3}cm` }}>
                   {i === 0 && timeSignature && (
                     <span className="meter">{timeSignature}</span>
                   )}
-                  {Array.from({ length: beats }, (_, j) => (
-                    <span
-                      key={j}
-                      className={`count${isActiveBar && currentBeat === j ? ' active' : ''}`}
-                      style={{ left: `${j}cm` }}
-                    >
-                      {j + 1}
-                    </span>
-                  ))}
+                  {Array.from({ length: beats }, (_, j) => {
+                    const beatBoxWidthCm = beatValue * 3;
+                    const countPosition = j * beatBoxWidthCm + beatBoxWidthCm / 2;
+                    return (
+                      <span
+                        key={j}
+                        className={`count${isActiveBar && currentBeat === j ? ' active' : ''}`}
+                        style={{ left: `${countPosition}cm` }}
+                      >
+                        {j + 1}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             );

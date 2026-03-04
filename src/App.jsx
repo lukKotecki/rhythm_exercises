@@ -24,7 +24,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   function generateBars() {
-    // determine beats per bar (quarter notes) from the numerator of timeSignature
+    // determine beats per bar from the numerator of timeSignature
     let beatsPerBar = 4;
     if (options.timeSignature) {
       const [numStr] = options.timeSignature.split('/');
@@ -32,10 +32,16 @@ function App() {
       if (!isNaN(n)) beatsPerBar = n;
     }
 
-    // convert bar length to quarter-note count (not needed internally)
-    const barLength = beatsPerBar;
+    // determine beat value (duration of one beat in quarter-notes) from denominator
+    // Each beat-box will contain notes totaling beatValue quarter-notes
+    let beatValue = 1;
+    if (options.timeSignature) {
+      const [, denomStr] = options.timeSignature.split('/');
+      const d = parseInt(denomStr, 10);
+      if (!isNaN(d)) beatValue = 4 / d;
+    }
 
-    // build list of possible notes and rests with their durations
+    // build list of possible notes and rests with their durations (in quarter-notes)
     const choices = [];
     Object.entries(options.noteValues).forEach(([name, enabled]) => {
       if (enabled) choices.push({ type: 'note', name, duration: durationMap[name] });
@@ -47,34 +53,43 @@ function App() {
     const bars = [];
     for (let i = 0; i < options.bars; i++) {
       const bar = [];
-      let sum = 0;
-      // keep adding random choices until we exactly match the meter value
-      while (sum < barLength) {
-        const available = choices.filter((c) => sum + c.duration <= barLength);
-        if (available.length === 0) {
-          // no suitable choice left; break to avoid infinite loop
-          break;
+      
+      // For each beat-box in this bar
+      for (let beatIdx = 0; beatIdx < beatsPerBar; beatIdx++) {
+        let sum = 0;
+        // Fill this beat-box with notes totaling exactly beatValue quarter-notes
+        while (sum < beatValue - 0.0001) {
+          // Filter choices that fit in remaining space of this beat-box
+          const remaining = beatValue - sum;
+          const available = choices.filter((c) => c.duration <= remaining + 0.0001);
+          
+          if (available.length === 0) {
+            // No suitable choice - shouldn't happen with proper note options
+            break;
+          }
+          
+          const choice = available[Math.floor(Math.random() * available.length)];
+          const noteObj = {
+            ...choice,
+            value: choice.name,
+            symbol: mapSymbol(choice),
+            accent: bar.length === 0, // accent first note in the bar
+          };
+          bar.push(noteObj);
+          sum += choice.duration;
         }
-        const choice = available[Math.floor(Math.random() * available.length)];
-        const noteObj = {
-          ...choice,
-          value: choice.name,
-          symbol: mapSymbol(choice),
-          accent: bar.length === 0, // accent first note in the bar
-        };
-        bar.push(noteObj);
-        sum += choice.duration;
       }
+      
       bars.push(bar);
     }
 
-    // insert a warm-up bar at start filled with quarter-note rests
+    // insert a warm-up bar at start
     const emptyBar = [];
     for (let beat = 0; beat < beatsPerBar; beat++) {
       emptyBar.push({
         type: 'rest',
         name: 'quarter',
-        duration: 1,
+        duration: beatValue,
         value: '',
         symbol: mapSymbol({ type: 'rest', name: 'quarter' }),
         accent: beat === 0,
