@@ -53,33 +53,44 @@ function App() {
     const bars = [];
     for (let i = 0; i < options.bars; i++) {
       const bar = [];
-      
-      // For each beat-box in this bar
-      for (let beatIdx = 0; beatIdx < beatsPerBar; beatIdx++) {
-        let sum = 0;
-        // Fill this beat-box with notes totaling exactly beatValue quarter-notes
-        while (sum < beatValue - 0.0001) {
-          // Filter choices that fit in remaining space of this beat-box
-          const remaining = beatValue - sum;
-          const available = choices.filter((c) => c.duration <= remaining + 0.0001);
-          
-          if (available.length === 0) {
-            // No suitable choice - shouldn't happen with proper note options
-            break;
-          }
-          
-          const choice = available[Math.floor(Math.random() * available.length)];
-          const noteObj = {
-            ...choice,
-            value: choice.name,
-            symbol: mapSymbol(choice),
-            accent: bar.length === 0, // accent first note in the bar
-          };
-          bar.push(noteObj);
-          sum += choice.duration;
+
+      const barDuration = beatsPerBar * beatValue;
+      let sum = 0;
+      const epsilon = 0.0001;
+
+      // Fill the whole bar with randomly selected values that fit remaining time.
+      // This allows larger note values (e.g. half/whole) to be generated when selected.
+      while (sum < barDuration - epsilon) {
+        const remaining = barDuration - sum;
+        const positionInBeat = sum % beatValue;
+        const remainingInBeat =
+          positionInBeat < epsilon ? beatValue : beatValue - positionInBeat;
+
+        const available = choices.filter((c) => {
+          if (c.duration > remaining + epsilon) return false;
+          const mustStartOnBeatBox =
+            c.name === 'quarter' || c.name === 'half' || c.name === 'whole';
+          if (mustStartOnBeatBox && positionInBeat > epsilon) return false;
+          // quarter and smaller values must stay inside one beat-box
+          if (c.duration <= 1 && c.duration > remainingInBeat + epsilon) return false;
+          return true;
+        });
+
+        if (available.length === 0) {
+          break;
         }
+
+        const choice = available[Math.floor(Math.random() * available.length)];
+        const noteObj = {
+          ...choice,
+          value: choice.name,
+          symbol: mapSymbol(choice),
+          accent: bar.length === 0, // accent first note in the bar
+        };
+        bar.push(noteObj);
+        sum += choice.duration;
       }
-      
+
       bars.push(bar);
     }
 
