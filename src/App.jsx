@@ -17,6 +17,7 @@ function App() {
     timeSignature: '4/4',
     articulation: 'legato',
     bars: 4,
+    metronomeDelay: 0,
   });
 
   const [barsData, setBarsData] = useState([]);
@@ -152,6 +153,7 @@ function App() {
             <RhythmArea
               barsData={barsData}
               timeSignature={options.timeSignature}
+              metronomeDelay={options.metronomeDelay}
               running={running}
               onPause={handlePause}
               // no need for onStop

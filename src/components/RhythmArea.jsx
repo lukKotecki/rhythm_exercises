@@ -179,7 +179,16 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
         <p>Press "Start" to generate rhythm.</p>
       ) : (
         <div className="bars">
-          {barsData.map((bar, i) => {
+          {(() => {
+            // compute bar start times in seconds (60BPM: duration in quarter-notes = seconds)
+            const barStartTimes = [];
+            let _t = 0;
+            barsData.forEach((bar) => {
+              barStartTimes.push(_t);
+              bar.forEach((note) => { _t += note.duration; });
+            });
+            barStartTimes.push(_t);
+            return barsData.map((bar, i) => {
             // compute beats per bar and beat value from time signature
             let beats = 4;
             let beatValue = 1; // quarter note = 1cm
@@ -192,6 +201,16 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
               if (!isNaN(d)) beatValue = 4 / d;
             }
             const isActiveBar = i === currentBar;
+            const barStart = barStartTimes[i];
+            const barEnd = barStartTimes[i + 1];
+            const barDuration = barEnd - barStart;
+            const barProgressPct = barDuration > 0
+              ? Math.min(100, Math.max(0, (elapsed - barStart) / barDuration * 100))
+              : 0;
+            const barClicks = clicks.reduce((acc, t, ci) => {
+              if (t >= barStart && t < barEnd) acc.push({ t, ci });
+              return acc;
+            }, []);
             return (
               <div key={i} className="bar-wrapper">
                 <div className="bar" style={{ width: `${beats * beatValue * 3.3}cm` }}>
@@ -250,9 +269,30 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
                     );
                   })}
                 </div>
+                <div className="bar-progress" style={{ width: `${beats * beatValue * 3.3}cm` }}>
+                  <div className="bar-progress-fill" style={{ width: `${barProgressPct}%` }} />
+                  {barClicks.map(({ t, ci }) => {
+                    const pct = ((t - barStart) / barDuration) * 100;
+                    const r = results[ci];
+                    const color = r ? (r.correct ? '#22c55e' : '#ef4444') : '#94a3b8';
+                    return (
+                      <span
+                        key={ci}
+                        className="bar-click-marker"
+                        style={{ left: `${pct}%`, background: color }}
+                      />
+                    );
+                  })}
+                  {running && i === currentBar && (
+                    <span
+                      className="bar-progress-head"
+                      style={{ left: `${barProgressPct}%` }}
+                    />
+                  )}
+                </div>
               </div>
             );
-          })}
+          });})()}
         </div>
       )}
       {results.length > 0 && (
@@ -264,24 +304,7 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
           ))}
         </div>
       )}
-      {/* progress bar showing click positions */}
-      {totalDuration > 0 && (
-        <div className="progress-bar">
-          {clicks.length > 0 &&
-            clicks.map((t, i) => {
-              const pct = Math.min(100, (t / totalDuration) * 100);
-              const color = results[i] ? (results[i].correct ? 'green' : 'red') : '#333';
-              return <span key={i} className="click-marker" style={{ left: `${pct}%`, background: color }} />;
-            })}
-          {/* moving head */}
-          {running && (
-            <span
-              className="progress-head"
-              style={{ left: `${Math.min(100, (elapsed / totalDuration) * 100)}%` }}
-            />
-          )}
-        </div>
-      )}
+
     </main>
   );
 }
