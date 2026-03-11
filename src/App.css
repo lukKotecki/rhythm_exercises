@@ -216,6 +216,83 @@
   border-bottom: none;
 }
 
+/* Collapsible accordion sections */
+.accordion-section {
+  border-bottom: 1px solid #334155;
+}
+
+.accordion-section:last-child {
+  border-bottom: none;
+}
+
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem 0;
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 0;
+  box-shadow: none;
+  transition: color 0.2s ease;
+  transform: none;
+}
+
+.accordion-header:hover,
+.accordion-header.open {
+  color: #f1f5f9;
+  transform: none;
+  box-shadow: none;
+}
+
+.accordion-header:focus,
+.accordion-header:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 2px;
+}
+
+.accordion-arrow {
+  font-size: 0.65rem;
+  color: #64748b;
+  transition: color 0.2s ease;
+}
+
+.accordion-header.open .accordion-arrow {
+  color: #818cf8;
+}
+
+.accordion-body {
+  padding: 0.25rem 0 0.75rem;
+}
+
+.field-group {
+  margin-bottom: 0.75rem;
+}
+
+.field-group:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 0.35rem;
+  cursor: default;
+}
+
+.field-label strong {
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
 .sidebar h2 {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;

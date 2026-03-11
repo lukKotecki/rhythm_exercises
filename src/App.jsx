@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import RhythmArea from './components/RhythmArea.jsx';
@@ -10,15 +10,35 @@ import './App.css';
 function App() {
   const [currentPage, setCurrentPage] = useState('Home');
 
-  // options state
-  const [options, setOptions] = useState({
-    noteValues: { whole: true, half: true, quarter: true, eighth: true, sixteenth: true },
-    rests: { whole: false, half: false, quarter: false, eighth: false, sixteenth: false },
-    timeSignature: '4/4',
-    articulation: 'legato',
-    bars: 4,
-    metronomeDelay: 0,
+  // options state – loaded from localStorage, falls back to defaults
+  const [options, setOptions] = useState(() => {
+    const defaults = {
+      noteValues: { whole: true, half: true, quarter: true, eighth: true, sixteenth: true },
+      rests: { whole: false, half: false, quarter: false, eighth: false, sixteenth: false },
+      timeSignature: '4/4',
+      articulation: 'legato',
+      bars: 4,
+      metronomeDelay: 0,
+      metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
+    };
+    try {
+      const saved = localStorage.getItem('rhythmExercisesOptions');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...defaults,
+          ...parsed,
+          metronomeSound: { ...defaults.metronomeSound, ...(parsed.metronomeSound || {}) },
+        };
+      }
+    } catch { /* ignore */ }
+    return defaults;
   });
+
+  // persist options whenever they change
+  useEffect(() => {
+    localStorage.setItem('rhythmExercisesOptions', JSON.stringify(options));
+  }, [options]);
 
   const [barsData, setBarsData] = useState([]);
   const [running, setRunning] = useState(false);
@@ -154,9 +174,9 @@ function App() {
               barsData={barsData}
               timeSignature={options.timeSignature}
               metronomeDelay={options.metronomeDelay}
+              metronomeSound={options.metronomeSound}
               running={running}
               onPause={handlePause}
-              // no need for onStop
             />
           )}
           {currentPage === 'Instructions' && <Instructions />}

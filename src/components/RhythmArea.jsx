@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 
 
-export default function RhythmArea({ barsData, timeSignature, running, onPause }) {
+export default function RhythmArea({ barsData, timeSignature, metronomeDelay, metronomeSound, running, onPause }) {
   const [clicks, setClicks] = useState([]);
   const [results, setResults] = useState([]);
   const [elapsed, setElapsed] = useState(0);
@@ -71,12 +71,11 @@ export default function RhythmArea({ barsData, timeSignature, running, onPause }
       setCurrentBar(Math.floor(beat / beatsPerBar));
 
       const osc = audioCtx.current.createOscillator();
-      // accent on first beat of bar
-      if (beat % beatsPerBar === 0) {
-        osc.frequency.value = 1500;
-      } else {
-        osc.frequency.value = 1000;
-      }
+      const sound = metronomeSound || {};
+      osc.type = sound.waveform || 'sine';
+      osc.frequency.value = (beat % beatsPerBar === 0)
+        ? (sound.accentFreq || 1500)
+        : (sound.beatFreq || 1000);
       osc.connect(audioCtx.current.destination);
       osc.start();
       osc.stop(audioCtx.current.currentTime + 0.05);
