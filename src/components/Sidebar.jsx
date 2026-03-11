@@ -20,7 +20,7 @@ const DEFAULT_EXPANDED = {
   metronome: false,
 };
 
-export default function Sidebar({ options, onChangeOptions, onStart, onPause, onReset, running, hasBars, open }) {
+export default function Sidebar({ options, onChangeOptions, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
   const articulations = ['legato', 'extension', 'staccato'];
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
@@ -233,17 +233,6 @@ export default function Sidebar({ options, onChangeOptions, onStart, onPause, on
           </div>
         </AccordionSection>
 
-      </div>
-      <div className="sidebar-actions">
-        <button className="start-button" onClick={onStart} disabled={running}>
-          {running ? 'Running...' : 'Start'}
-        </button>
-        <button className="start-button" onClick={onPause} disabled={!running}>
-          Stop
-        </button>
-        <button className="start-button" onClick={onReset} disabled={running || !hasBars}>
-          Reset
-        </button>
       </div>
     </aside>
   );

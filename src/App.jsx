@@ -156,16 +156,16 @@ function App() {
         }}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
+        onStart={handleStart}
+        onPause={handlePause}
+        onReset={handleReset}
+        running={running}
+        hasBars={barsData.length > 0}
       />
       <div className="content-wrap">
         <Sidebar
           options={options}
           onChangeOptions={setOptions}
-          onStart={handleStart}
-          onPause={handlePause}
-          onReset={handleReset}
-          running={running}
-          hasBars={barsData.length > 0}
           open={sidebarOpen}
         />
         <div className="main-area">

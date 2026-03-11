@@ -5,6 +5,11 @@ export default function Header({
   onChangePage,
   sidebarOpen,
   onToggleSidebar,
+  onStart,
+  onPause,
+  onReset,
+  running,
+  hasBars,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pages = ['Home', 'Instructions', 'About', 'Settings'];
@@ -16,16 +21,29 @@ export default function Header({
 
   return (
     <header className="app-header">
-      <button
-        className={`menu-toggle${sidebarOpen ? ' active' : ''}`}
-        onClick={onToggleSidebar}
-        aria-label="Toggle sidebar"
-        aria-pressed={sidebarOpen}
-        title="Settings"
-      >
-        ⚙️
-      </button>
-      <h1>Rhythm Exercise</h1>
+      <div className="header-left">
+        <button
+          className={`menu-toggle${sidebarOpen ? ' active' : ''}`}
+          onClick={onToggleSidebar}
+          aria-label="Toggle sidebar"
+          aria-pressed={sidebarOpen}
+          title="Settings"
+        >
+          ⚙️
+        </button>
+        <h1>Rhythm Exercise</h1>
+      </div>
+      <div className="header-controls">
+        <button className="start-button" onClick={onStart} disabled={running}>
+          {running ? 'Running...' : 'Start'}
+        </button>
+        <button className="start-button" onClick={onPause} disabled={!running}>
+          Stop
+        </button>
+        <button className="start-button" onClick={onReset} disabled={running || !hasBars}>
+          Reset
+        </button>
+      </div>
       <button
         className="menu-toggle"
         onClick={() => setMenuOpen((o) => !o)}
