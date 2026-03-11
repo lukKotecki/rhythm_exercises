@@ -25,6 +25,8 @@ export default function RhythmArea({
   const [tapAssessments, setTapAssessments] = useState([]);
   // barAccuracy[i] = { barIndex, accuracyPct, matched, expected } for each non-warmup bar
   const [barAccuracy, setBarAccuracy] = useState([]);
+  // expected slots that were not hit exactly (used for blue markers)
+  const [missingExpectedByBar, setMissingExpectedByBar] = useState([]);
   const [elapsed, setElapsed] = useState(0);
   const audioCtx = useRef(null);
   const intervalRef = useRef(null);
@@ -95,6 +97,7 @@ export default function RhythmArea({
     setTappedRhythm([]);
     setTapAssessments([]);
     setBarAccuracy([]);
+    setMissingExpectedByBar([]);
     calibrationSentRef.current = false;
   }, [barsData, timeSignature, tappedRhythmAccuracy]);
 
@@ -186,7 +189,7 @@ export default function RhythmArea({
     const totalDelaySec = manualDelaySec + syncDelaySec;
 
     const assessments = [];
-    // track which slots have already been matched in each bar (once each)
+    // track which slots have already been matched exactly in each bar (once each)
     const matchedByBar = barsData.map(() => new Set());
     const tapCountByBar = new Array(barsData.length).fill(0);
 
@@ -194,7 +197,7 @@ export default function RhythmArea({
       const correctedTapTime = tapTime - totalDelaySec;
       const barIndex = barStarts.findIndex((start, idx) => correctedTapTime >= start && correctedTapTime < barEnds[idx]);
       if (barIndex <= 0) { // warmup bar or before start: ignore
-        assessments[ti] = { barIndex, slot: null, correct: false };
+        assessments[ti] = { barIndex, slot: null, status: 'bad', correct: false };
         return;
       }
 
@@ -204,26 +207,40 @@ export default function RhythmArea({
       const bounded = Math.max(1, Math.min(maxSlot, slot));
       const expected = expectedByBarRef.current[barIndex] || new Set();
       const alreadyMatched = matchedByBar[barIndex].has(bounded);
-      const correct = expected.has(bounded) && !alreadyMatched;
 
-      if (correct) matchedByBar[barIndex].add(bounded);
+      let status = 'bad';
+      if (expected.has(bounded) && !alreadyMatched) {
+        status = 'good';
+        matchedByBar[barIndex].add(bounded);
+      } else {
+        const nearLeft = bounded - 1;
+        const nearRight = bounded + 1;
+        if (expected.has(nearLeft) || expected.has(nearRight)) {
+          status = 'near';
+        }
+      }
+
       tapCountByBar[barIndex] += 1;
-      assessments[ti] = { barIndex, slot: bounded, correct };
+      assessments[ti] = { barIndex, slot: bounded, status, correct: status === 'good' };
     });
 
     const accRows = [];
+    const missingByBar = barsData.map(() => []);
     for (let i = 1; i < barsData.length; i++) {
-      const expectedCount = (expectedByBarRef.current[i] || new Set()).size;
+      const expectedSlots = expectedByBarRef.current[i] || new Set();
+      const expectedCount = expectedSlots.size;
       const matched = matchedByBar[i].size;
       const extra = Math.max(0, tapCountByBar[i] - matched);
       const missed = Math.max(0, expectedCount - matched);
       const denom = matched + extra + missed;
       const pct = denom === 0 ? 100 : Math.round((matched / denom) * 100);
       accRows.push({ barIndex: i, accuracyPct: pct, matched, expected: expectedCount });
+      missingByBar[i] = [...expectedSlots].filter((slotVal) => !matchedByBar[i].has(slotVal));
     }
 
     setTapAssessments(assessments);
     setBarAccuracy(accRows);
+    setMissingExpectedByBar(missingByBar);
   }, [tappedRhythm, barsData, metronomeDelay, synchronization]);
 
   useEffect(() => {
@@ -280,6 +297,7 @@ export default function RhythmArea({
         setTappedRhythm([]);
         setTapAssessments([]);
         setBarAccuracy([]);
+        setMissingExpectedByBar([]);
       }
       stopMetronome();
     }
@@ -329,6 +347,10 @@ export default function RhythmArea({
               if (t >= barStart && t < barEnd) acc.push({ t, ti });
               return acc;
             }, []);
+            const slotsPerBeat = timingMapRef.current.slotsPerBeat || 12;
+            const totalSlotsInBar = beats * slotsPerBeat;
+            const expectedSlots = [...(expectedByBarRef.current[i] || new Set())].sort((a, b) => a - b);
+            const missingSlotSet = new Set(missingExpectedByBar[i] || []);
             return (
               <div key={i} className="bar-wrapper">
                 <div className="bar" style={{ width: `${beats * beatValue * 3.3}cm` }}>
@@ -389,12 +411,23 @@ export default function RhythmArea({
                 </div>
                 <div className="bar-progress" style={{ width: `${beats * beatValue * 3.3}cm` }}>
                   <div className="bar-progress-fill" style={{ width: `${barProgressPct}%` }} />
+                  {expectedSlots.map((slotVal) => {
+                    const pct = ((slotVal - 1) / totalSlotsInBar) * 100;
+                    const missing = missingSlotSet.has(slotVal);
+                    return (
+                      <span
+                        key={`exp-${i}-${slotVal}`}
+                        className={`bar-expected-marker${missing ? ' missing' : ''}`}
+                        style={{ left: `${pct}%` }}
+                      />
+                    );
+                  })}
                   {barTapped.map(({ t, ti }) => {
                     const pct = ((t - barStart) / barDuration) * 100;
                     const assessment = tapAssessments[ti];
-                    const color = assessment
-                      ? (assessment.correct ? '#22c55e' : '#ef4444')
-                      : '#94a3b8';
+                    let color = '#ef4444';
+                    if (assessment?.status === 'good') color = '#22c55e';
+                    else if (assessment?.status === 'near') color = '#9ca3af';
                     return (
                       <span
                         key={ti}
