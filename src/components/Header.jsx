@@ -33,24 +33,28 @@ export default function Header({
         </button>
         <h1>Rhythm Exercise</h1>
       </div>
+
       <div className="header-controls">
-        <button className="start-button" onClick={onStart} disabled={running}>
+        <button className="start-button header-action" onClick={onStart} disabled={running}>
           {running ? 'Running...' : 'Start'}
         </button>
-        <button className="start-button" onClick={onPause} disabled={!running}>
+        <button className="start-button header-action" onClick={onPause} disabled={!running}>
           Stop
         </button>
-        <button className="start-button" onClick={onReset} disabled={running || !hasBars}>
+        <button className="start-button header-action" onClick={onReset} disabled={running || !hasBars}>
           Reset
         </button>
       </div>
-      <button
-        className="menu-toggle"
-        onClick={() => setMenuOpen((o) => !o)}
-        aria-label="Toggle menu"
-      >
-        ☰
-      </button>
+
+      <div className="header-right">
+        <button
+          className="menu-toggle"
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-label="Toggle menu"
+        >
+          ☰
+        </button>
+      </div>
       {menuOpen && (
         <nav className="page-menu">
           <ul>

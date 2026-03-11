@@ -163,11 +163,13 @@ function App() {
         hasBars={barsData.length > 0}
       />
       <div className="content-wrap">
-        <Sidebar
-          options={options}
-          onChangeOptions={setOptions}
-          open={sidebarOpen}
-        />
+        {sidebarOpen && (
+          <Sidebar
+            options={options}
+            onChangeOptions={setOptions}
+            open={sidebarOpen}
+          />
+        )}
         <div className="main-area">
           {currentPage === 'Home' && (
             <RhythmArea
