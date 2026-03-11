@@ -18,6 +18,7 @@ const DEFAULT_EXPANDED = {
   barSettings: false,
   articulation: false,
   metronome: false,
+  tappedRhythm: false,
 };
 
 export default function Sidebar({ options, onChangeOptions, open }) {
@@ -54,6 +55,13 @@ export default function Sidebar({ options, onChangeOptions, open }) {
       const parsed = parseInt(value, 10);
       const clamped = Number.isNaN(parsed) ? 0 : Math.max(-300, Math.min(300, parsed));
       onChangeOptions({ ...options, metronomeDelay: clamped });
+      return;
+    }
+    if (field === 'tappedRhythmAccuracy') {
+      const parsed = parseInt(value, 10);
+      const bounded = Number.isNaN(parsed) ? 12 : Math.max(4, Math.min(100, parsed));
+      const stepped = Math.round(bounded / 4) * 4;
+      onChangeOptions({ ...options, tappedRhythmAccuracy: stepped });
       return;
     }
     onChangeOptions({ ...options, [field]: value });
@@ -228,6 +236,32 @@ export default function Sidebar({ options, onChangeOptions, open }) {
                 max="2000"
                 value={options.metronomeSound.beatFreq}
                 onChange={(e) => changeSoundField('beatFreq', parseInt(e.target.value, 10) || 1000)}
+              />
+            </div>
+          </div>
+        </AccordionSection>
+
+        <AccordionSection id="tappedRhythm" title="Tapped rhythm settings">
+          <div className="field-group">
+            <label className="field-label">
+              Accuracy grid: <strong>{options.tappedRhythmAccuracy ?? 12}</strong>
+            </label>
+            <div className="range-group">
+              <input
+                type="range"
+                min="4"
+                max="100"
+                step="4"
+                value={options.tappedRhythmAccuracy ?? 12}
+                onChange={(e) => changeField('tappedRhythmAccuracy', e.target.value)}
+              />
+              <input
+                type="number"
+                min="4"
+                max="100"
+                step="4"
+                value={options.tappedRhythmAccuracy ?? 12}
+                onChange={(e) => changeField('tappedRhythmAccuracy', e.target.value)}
               />
             </div>
           </div>

@@ -609,9 +609,7 @@
   transition: all 0.2s;
 }
 
-.note.active {
-  /* no shadow - beat-box will be highlighted instead */
-}
+/* .note.active: highlight handled by beat-box instead */
 
 .note.rest {
   opacity: 0.5;

@@ -1,9 +1,19 @@
 import { useEffect, useState, useRef } from 'react';
 
+// Convert absolute time t (seconds since start) to 1-based slot number within a bar.
+// beatDuration: duration of one metronome beat (= beatValue at 60 BPM)
+// slotsPerBeat: number of grid slots per beat (tappedRhythmAccuracy)
+function timeToSlot(offsetInBar, beatDuration, slotsPerBeat) {
+  return Math.floor((offsetInBar / beatDuration) * slotsPerBeat) + 1;
+}
 
-export default function RhythmArea({ barsData, timeSignature, metronomeDelay, metronomeSound, running, onPause }) {
-  const [clicks, setClicks] = useState([]);
-  const [results, setResults] = useState([]);
+export default function RhythmArea({ barsData, timeSignature, metronomeDelay, tappedRhythmAccuracy, metronomeSound, running, onPause }) {
+  // tapped rhythm: array of timestamps (seconds) when user clicked/pressed space
+  const [tappedRhythm, setTappedRhythm] = useState([]);
+  // tapAssessments[i] = { barIndex, slot, correct } for each tap
+  const [tapAssessments, setTapAssessments] = useState([]);
+  // barAccuracy[i] = { barIndex, accuracyPct, matched, expected } for each non-warmup bar
+  const [barAccuracy, setBarAccuracy] = useState([]);
   const [elapsed, setElapsed] = useState(0);
   const audioCtx = useRef(null);
   const intervalRef = useRef(null);
@@ -12,52 +22,82 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, me
   const [currentBeat, setCurrentBeat] = useState(-1);
   const [currentBar, setCurrentBar] = useState(-1);
 
-  // compute onsets for the expected rhythm
-  const expectedOnsets = useRef([]);
+  // per-bar expected slot Sets (index 0 = warmup, skipped during evaluation)
+  const expectedByBarRef = useRef([]);
+  // timing lookup built when barsData changes
+  const timingMapRef = useRef({ beatsPerBar: 4, beatDuration: 1, slotsPerBeat: 12, barStarts: [], barEnds: [] });
   const [totalDuration, setTotalDuration] = useState(0);
-  const nextExpectedIdx = useRef(0);
 
-  // when barsData changes we recompute onsets and reset tracking
+  // Build per-bar expected slot sets and timing map whenever barsData / accuracy setting changes
   useEffect(() => {
-    if (barsData.length === 0) return;
-    // compute expected onsets in seconds assuming quarter note = 1 beat and tempo 60 (1s per beat)
+    if (barsData.length === 0) {
+      expectedByBarRef.current = [];
+      timingMapRef.current = { beatsPerBar: 4, beatDuration: 1, slotsPerBeat: 12, barStarts: [], barEnds: [] };
+      return;
+    }
+
+    let beatsPerBar = 4;
+    let beatValue = 1;
+    if (timeSignature) {
+      const [numStr, denomStr] = timeSignature.split('/');
+      const n = parseInt(numStr, 10);
+      const d = parseInt(denomStr, 10);
+      if (!Number.isNaN(n)) beatsPerBar = n;
+      if (!Number.isNaN(d)) beatValue = 4 / d;
+    }
+    // beatDuration = beatsValue seconds at fixed 60 BPM (1 quarter-note = 1 s)
+    const beatDuration = beatValue;
+    const slotsPerBeat = Math.max(4, Math.min(100, tappedRhythmAccuracy || 12));
+
     let time = 0;
-    expectedOnsets.current = [];
+    const barStarts = [];
+    const barEnds = [];
+    const expectedByBar = [];
+
     barsData.forEach((bar, idx) => {
-      if (idx === 0) {
-        // warm-up bar: advance time but don't add onsets
-        bar.forEach((note) => {
-          time += note.duration;
-        });
-      } else {
-        bar.forEach((note) => {
-          expectedOnsets.current.push(time);
-          time += note.duration;
-        });
-      }
+      barStarts.push(time);
+      let offsetInBar = 0;
+      const slots = new Set();
+      bar.forEach((note) => {
+        // only notes (not rests) in non-warmup bars generate expected tap slots
+        if (idx > 0 && note.type === 'note') {
+          const slot = timeToSlot(offsetInBar, beatDuration, slotsPerBeat);
+          const maxSlot = beatsPerBar * slotsPerBeat;
+          slots.add(Math.max(1, Math.min(maxSlot, slot)));
+        }
+        offsetInBar += note.duration;
+        time += note.duration;
+      });
+      barEnds.push(time);
+      expectedByBar.push(slots);
     });
+
+    expectedByBarRef.current = expectedByBar;
+    timingMapRef.current = { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds };
     setTotalDuration(time);
-    // reset user tracking
-    setClicks([]);
-    setResults([]);
-    nextExpectedIdx.current = 0;
-  }, [barsData]);
+    // reset tracking
+    setTappedRhythm([]);
+    setTapAssessments([]);
+    setBarAccuracy([]);
+  }, [barsData, timeSignature, tappedRhythmAccuracy]);
 
   function startMetronome() {
     audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
     startTimeRef.current = audioCtx.current.currentTime;
     // reset elapsed
     setElapsed(0);
-    // determine beats per bar from timeSignature
+    // determine beats per bar and beat value from timeSignature
     let beatsPerBar = 4;
+    let beatValue = 1;
     if (timeSignature) {
-      const [numStr] = timeSignature.split('/');
+      const [numStr, denomStr] = timeSignature.split('/');
       const n = parseInt(numStr, 10);
+      const d = parseInt(denomStr, 10);
       if (!isNaN(n)) beatsPerBar = n;
+      if (!isNaN(d)) beatValue = 4 / d;
     }
-    // determine how many metronome ticks we expect: one beat per quarter-note
-    // multiplied by number of bars in barsData (includes warm‑up bar at start).
-    // Example: default 4/4 with 4 bars → barsData.length == 5 → totalBeats = 20.
+    // beatValue * 1000 = ms per metronome tick at fixed 60 BPM
+    const beatIntervalMs = beatValue * 1000;
     let beat = 0;
     const totalBeats = beatsPerBar * barsData.length;
     intervalRef.current = setInterval(() => {
@@ -80,7 +120,7 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, me
       osc.start();
       osc.stop(audioCtx.current.currentTime + 0.05);
       beat += 1;
-    }, 1000);
+    }, beatIntervalMs);
     // start animation frame for elapsed
     function update() {
       setElapsed(audioCtx.current.currentTime - startTimeRef.current);
@@ -102,31 +142,63 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, me
 
   function handleKey(e) {
     if (e.code === 'Space') {
-      handleUserClick();
+      handleTapInput();
     } else if (e.code === 'Escape' || e.key === 's' || e.key === 'S') {
       stopMetronome();
     }
   }
 
-  function handleUserClick() {
+  function handleTapInput() {
     const now = audioCtx.current
       ? audioCtx.current.currentTime - startTimeRef.current
       : Date.now() / 1000 - startTimeRef.current;
-    setClicks((c) => [...c, now]);
+    setTappedRhythm((prev) => [...prev, now]);
   }
 
-  // check clicks against expected onsets on each click
+  // Evaluate every tap against the time-slot grid; compute per-bar accuracy
   useEffect(() => {
-    if (clicks.length === 0) return;
-    const lastClick = clicks[clicks.length - 1];
-    const idx = nextExpectedIdx.current;
-    if (idx >= expectedOnsets.current.length) return;
-    const target = expectedOnsets.current[idx];
-    const diff = Math.abs(lastClick - target);
-    const correct = diff < 0.25; // within a quarter-second
-    setResults((r) => [...r, { expected: target, actual: lastClick, correct }]);
-    nextExpectedIdx.current = idx + 1;
-  }, [clicks]);
+    const { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds } = timingMapRef.current;
+    if (!barStarts.length) return;
+
+    const assessments = [];
+    // track which slots have already been matched in each bar (once each)
+    const matchedByBar = barsData.map(() => new Set());
+    const tapCountByBar = new Array(barsData.length).fill(0);
+
+    tappedRhythm.forEach((tapTime, ti) => {
+      const barIndex = barStarts.findIndex((start, idx) => tapTime >= start && tapTime < barEnds[idx]);
+      if (barIndex <= 0) { // warmup bar or before start: ignore
+        assessments[ti] = { barIndex, slot: null, correct: false };
+        return;
+      }
+
+      const offsetInBar = tapTime - barStarts[barIndex];
+      const slot = timeToSlot(offsetInBar, beatDuration, slotsPerBeat);
+      const maxSlot = beatsPerBar * slotsPerBeat;
+      const bounded = Math.max(1, Math.min(maxSlot, slot));
+      const expected = expectedByBarRef.current[barIndex] || new Set();
+      const alreadyMatched = matchedByBar[barIndex].has(bounded);
+      const correct = expected.has(bounded) && !alreadyMatched;
+
+      if (correct) matchedByBar[barIndex].add(bounded);
+      tapCountByBar[barIndex] += 1;
+      assessments[ti] = { barIndex, slot: bounded, correct };
+    });
+
+    const accRows = [];
+    for (let i = 1; i < barsData.length; i++) {
+      const expectedCount = (expectedByBarRef.current[i] || new Set()).size;
+      const matched = matchedByBar[i].size;
+      const extra = Math.max(0, tapCountByBar[i] - matched);
+      const missed = Math.max(0, expectedCount - matched);
+      const denom = matched + extra + missed;
+      const pct = denom === 0 ? 100 : Math.round((matched / denom) * 100);
+      accRows.push({ barIndex: i, accuracyPct: pct, matched, expected: expectedCount });
+    }
+
+    setTapAssessments(assessments);
+    setBarAccuracy(accRows);
+  }, [tappedRhythm, barsData]);
 
   // stop metronome when component unmounts
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -159,9 +231,9 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, me
     if (!running && barsData.length > 0) {
       // if we haven't yet played the whole duration, wipe the clicks/results
       if (elapsed < totalDuration) {
-        setClicks([]);
-        setResults([]);
-        nextExpectedIdx.current = 0;
+        setTappedRhythm([]);
+        setTapAssessments([]);
+        setBarAccuracy([]);
       }
       stopMetronome();
     }
@@ -170,7 +242,7 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, me
   return (
     <main
       className="rhythm-area"
-      onClick={handleUserClick}
+      onClick={handleTapInput}
       tabIndex={0}
       onKeyDown={handleKey}
     >
@@ -206,8 +278,9 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, me
             const barProgressPct = barDuration > 0
               ? Math.min(100, Math.max(0, (elapsed - barStart) / barDuration * 100))
               : 0;
-            const barClicks = clicks.reduce((acc, t, ci) => {
-              if (t >= barStart && t < barEnd) acc.push({ t, ci });
+            // collect taps that fall in this bar with their global index
+            const barTapped = tappedRhythm.reduce((acc, t, ti) => {
+              if (t >= barStart && t < barEnd) acc.push({ t, ti });
               return acc;
             }, []);
             return (
@@ -270,13 +343,15 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, me
                 </div>
                 <div className="bar-progress" style={{ width: `${beats * beatValue * 3.3}cm` }}>
                   <div className="bar-progress-fill" style={{ width: `${barProgressPct}%` }} />
-                  {barClicks.map(({ t, ci }) => {
+                  {barTapped.map(({ t, ti }) => {
                     const pct = ((t - barStart) / barDuration) * 100;
-                    const r = results[ci];
-                    const color = r ? (r.correct ? '#22c55e' : '#ef4444') : '#94a3b8';
+                    const assessment = tapAssessments[ti];
+                    const color = assessment
+                      ? (assessment.correct ? '#22c55e' : '#ef4444')
+                      : '#94a3b8';
                     return (
                       <span
-                        key={ci}
+                        key={ti}
                         className="bar-click-marker"
                         style={{ left: `${pct}%`, background: color }}
                       />
@@ -294,11 +369,15 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, me
           });})()}
         </div>
       )}
-      {results.length > 0 && (
+      {barAccuracy.length > 0 && (
         <div className="results">
-          {results.map((r, i) => (
-            <div key={i} className={r.correct ? 'correct' : 'wrong'}>
-              {r.correct ? '✓' : '✗'} expected {r.expected.toFixed(2)} got {r.actual.toFixed(2)}
+          {barAccuracy.map((row) => (
+            <div
+              key={row.barIndex}
+              className={`bar-accuracy ${row.accuracyPct >= 80 ? 'good' : 'bad'}`}
+            >
+              Bar {row.barIndex}: tapped rhythm {row.accuracyPct}%
+              &nbsp;({row.matched}/{row.expected})
             </div>
           ))}
         </div>

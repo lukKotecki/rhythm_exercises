@@ -19,6 +19,7 @@ function App() {
       articulation: 'legato',
       bars: 4,
       metronomeDelay: 0,
+      tappedRhythmAccuracy: 12,
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
     };
     try {
@@ -176,6 +177,7 @@ function App() {
               barsData={barsData}
               timeSignature={options.timeSignature}
               metronomeDelay={options.metronomeDelay}
+              tappedRhythmAccuracy={options.tappedRhythmAccuracy}
               metronomeSound={options.metronomeSound}
               running={running}
               onPause={handlePause}
