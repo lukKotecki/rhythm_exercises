@@ -183,6 +183,25 @@ export default function Sidebar({ options, onChangeOptions, open }) {
           </div>
 
           <div className="field-group">
+            <label className="field-label">Synchronization</label>
+            {options.synchronization?.enabled ? (
+              <div>
+                <div>
+                  Avg offset: <strong>{(options.synchronization.averageOffsetSec || 0).toFixed(3)} s</strong>
+                </div>
+                <div>
+                  Samples: <strong>{options.synchronization.sampleCount || 0}</strong>
+                </div>
+                <div>
+                  Saved: <strong>{options.synchronization.calibratedAt ? new Date(options.synchronization.calibratedAt).toLocaleString() : '-'}</strong>
+                </div>
+              </div>
+            ) : (
+              <div>No calibration saved yet. Use Delay button in header.</div>
+            )}
+          </div>
+
+          <div className="field-group">
             <label className="field-label">Waveform</label>
             <select
               value={options.metronomeSound.waveform}

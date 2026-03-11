@@ -20,6 +20,7 @@ function App() {
       bars: 4,
       metronomeDelay: 0,
       tappedRhythmAccuracy: 12,
+      synchronization: { enabled: false, averageOffsetSec: 0, sampleCount: 0, calibratedAt: null },
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
     };
     try {
@@ -29,6 +30,7 @@ function App() {
         return {
           ...defaults,
           ...parsed,
+          synchronization: { ...defaults.synchronization, ...(parsed.synchronization || {}) },
           metronomeSound: { ...defaults.metronomeSound, ...(parsed.metronomeSound || {}) },
         };
       }
@@ -43,9 +45,44 @@ function App() {
 
   const [barsData, setBarsData] = useState([]);
   const [running, setRunning] = useState(false);
+  const [exerciseMode, setExerciseMode] = useState('normal');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  function generateBars() {
+  function generateBars(mode = 'normal') {
+    if (mode === 'delay-calibration') {
+      const beatValue = 1;
+      const beatsPerBar = 4;
+      const warmupBar = [];
+      for (let beat = 0; beat < beatsPerBar; beat++) {
+        warmupBar.push({
+          type: 'rest',
+          name: 'quarter',
+          duration: beatValue,
+          value: '',
+          symbol: mapSymbol({ type: 'rest', name: 'quarter' }),
+          accent: beat === 0,
+        });
+      }
+
+      const quarterBars = Array.from({ length: 4 }, () => {
+        const bar = [];
+        for (let beat = 0; beat < beatsPerBar; beat++) {
+          bar.push({
+            type: 'note',
+            name: 'quarter',
+            duration: 1,
+            value: 'quarter',
+            symbol: mapSymbol({ type: 'note', name: 'quarter' }),
+            accent: beat === 0,
+          });
+        }
+        return bar;
+      });
+
+      setBarsData([warmupBar, ...quarterBars]);
+      return;
+    }
+
     // determine beats per bar from the numerator of timeSignature
     let beatsPerBar = 4;
     if (options.timeSignature) {
@@ -133,7 +170,15 @@ function App() {
 
   function handleStart() {
     if (running) return; // already active
-    generateBars();
+    setExerciseMode('normal');
+    generateBars('normal');
+    setRunning(true);
+  }
+
+  function handleDelayCalibration() {
+    if (running) return;
+    setExerciseMode('delay-calibration');
+    generateBars('delay-calibration');
     setRunning(true);
   }
 
@@ -145,6 +190,21 @@ function App() {
   function handleReset() {
     setBarsData([]);
     setRunning(false);
+    setExerciseMode('normal');
+  }
+
+  function handleCalibrationComplete(payload) {
+    if (!payload || typeof payload.averageOffsetSec !== 'number') return;
+    setOptions((prev) => ({
+      ...prev,
+      synchronization: {
+        enabled: true,
+        averageOffsetSec: payload.averageOffsetSec,
+        sampleCount: payload.sampleCount,
+        calibratedAt: Date.now(),
+      },
+    }));
+    setExerciseMode('normal');
   }
 
   return (
@@ -160,6 +220,7 @@ function App() {
         onStart={handleStart}
         onPause={handlePause}
         onReset={handleReset}
+        onDelayCalibration={handleDelayCalibration}
         running={running}
         hasBars={barsData.length > 0}
       />
@@ -175,12 +236,15 @@ function App() {
           {currentPage === 'Home' && (
             <RhythmArea
               barsData={barsData}
-              timeSignature={options.timeSignature}
+              timeSignature={exerciseMode === 'delay-calibration' ? '4/4' : options.timeSignature}
               metronomeDelay={options.metronomeDelay}
               tappedRhythmAccuracy={options.tappedRhythmAccuracy}
               metronomeSound={options.metronomeSound}
+              synchronization={options.synchronization}
+              exerciseMode={exerciseMode}
               running={running}
               onPause={handlePause}
+              onCalibrationComplete={handleCalibrationComplete}
             />
           )}
           {currentPage === 'Instructions' && <Instructions />}

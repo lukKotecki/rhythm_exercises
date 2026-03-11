@@ -7,7 +7,18 @@ function timeToSlot(offsetInBar, beatDuration, slotsPerBeat) {
   return Math.floor((offsetInBar / beatDuration) * slotsPerBeat) + 1;
 }
 
-export default function RhythmArea({ barsData, timeSignature, metronomeDelay, tappedRhythmAccuracy, metronomeSound, running, onPause }) {
+export default function RhythmArea({
+  barsData,
+  timeSignature,
+  metronomeDelay,
+  tappedRhythmAccuracy,
+  metronomeSound,
+  synchronization,
+  exerciseMode,
+  running,
+  onPause,
+  onCalibrationComplete,
+}) {
   // tapped rhythm: array of timestamps (seconds) when user clicked/pressed space
   const [tappedRhythm, setTappedRhythm] = useState([]);
   // tapAssessments[i] = { barIndex, slot, correct } for each tap
@@ -19,11 +30,13 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, ta
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const rafRef = useRef(null);
+  const calibrationSentRef = useRef(false);
   const [currentBeat, setCurrentBeat] = useState(-1);
   const [currentBar, setCurrentBar] = useState(-1);
 
   // per-bar expected slot Sets (index 0 = warmup, skipped during evaluation)
   const expectedByBarRef = useRef([]);
+  const expectedTapTimesRef = useRef([]);
   // timing lookup built when barsData changes
   const timingMapRef = useRef({ beatsPerBar: 4, beatDuration: 1, slotsPerBeat: 12, barStarts: [], barEnds: [] });
   const [totalDuration, setTotalDuration] = useState(0);
@@ -53,6 +66,7 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, ta
     const barStarts = [];
     const barEnds = [];
     const expectedByBar = [];
+    const expectedTapTimes = [];
 
     barsData.forEach((bar, idx) => {
       barStarts.push(time);
@@ -61,6 +75,7 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, ta
       bar.forEach((note) => {
         // only notes (not rests) in non-warmup bars generate expected tap slots
         if (idx > 0 && note.type === 'note') {
+          expectedTapTimes.push(time);
           const slot = timeToSlot(offsetInBar, beatDuration, slotsPerBeat);
           const maxSlot = beatsPerBar * slotsPerBeat;
           slots.add(Math.max(1, Math.min(maxSlot, slot)));
@@ -73,12 +88,14 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, ta
     });
 
     expectedByBarRef.current = expectedByBar;
+  expectedTapTimesRef.current = expectedTapTimes;
     timingMapRef.current = { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds };
     setTotalDuration(time);
     // reset tracking
     setTappedRhythm([]);
     setTapAssessments([]);
     setBarAccuracy([]);
+    calibrationSentRef.current = false;
   }, [barsData, timeSignature, tappedRhythmAccuracy]);
 
   function startMetronome() {
@@ -100,7 +117,7 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, ta
     const beatIntervalMs = beatValue * 1000;
     let beat = 0;
     const totalBeats = beatsPerBar * barsData.length;
-    intervalRef.current = setInterval(() => {
+    const playBeat = () => {
       // stop once we've played the requested number of beats
       if (beat >= totalBeats) {
         stopMetronome();
@@ -120,7 +137,11 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, ta
       osc.start();
       osc.stop(audioCtx.current.currentTime + 0.05);
       beat += 1;
-    }, beatIntervalMs);
+    };
+
+    // play first click immediately; subsequent clicks keep the beat interval
+    playBeat();
+    intervalRef.current = setInterval(playBeat, beatIntervalMs);
     // start animation frame for elapsed
     function update() {
       setElapsed(audioCtx.current.currentTime - startTimeRef.current);
@@ -160,19 +181,24 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, ta
     const { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds } = timingMapRef.current;
     if (!barStarts.length) return;
 
+    const manualDelaySec = (metronomeDelay || 0) / 100;
+    const syncDelaySec = synchronization?.enabled ? (synchronization.averageOffsetSec || 0) : 0;
+    const totalDelaySec = manualDelaySec + syncDelaySec;
+
     const assessments = [];
     // track which slots have already been matched in each bar (once each)
     const matchedByBar = barsData.map(() => new Set());
     const tapCountByBar = new Array(barsData.length).fill(0);
 
     tappedRhythm.forEach((tapTime, ti) => {
-      const barIndex = barStarts.findIndex((start, idx) => tapTime >= start && tapTime < barEnds[idx]);
+      const correctedTapTime = tapTime - totalDelaySec;
+      const barIndex = barStarts.findIndex((start, idx) => correctedTapTime >= start && correctedTapTime < barEnds[idx]);
       if (barIndex <= 0) { // warmup bar or before start: ignore
         assessments[ti] = { barIndex, slot: null, correct: false };
         return;
       }
 
-      const offsetInBar = tapTime - barStarts[barIndex];
+      const offsetInBar = correctedTapTime - barStarts[barIndex];
       const slot = timeToSlot(offsetInBar, beatDuration, slotsPerBeat);
       const maxSlot = beatsPerBar * slotsPerBeat;
       const bounded = Math.max(1, Math.min(maxSlot, slot));
@@ -198,7 +224,27 @@ export default function RhythmArea({ barsData, timeSignature, metronomeDelay, ta
 
     setTapAssessments(assessments);
     setBarAccuracy(accRows);
-  }, [tappedRhythm, barsData]);
+  }, [tappedRhythm, barsData, metronomeDelay, synchronization]);
+
+  useEffect(() => {
+    if (!running || exerciseMode !== 'delay-calibration' || elapsed < totalDuration || totalDuration <= 0) return;
+    if (calibrationSentRef.current) return;
+    const expected = expectedTapTimesRef.current;
+    if (!expected.length || tappedRhythm.length === 0) return;
+
+    const sampleCount = Math.min(expected.length, tappedRhythm.length);
+    if (sampleCount <= 0) return;
+
+    let sum = 0;
+    for (let i = 0; i < sampleCount; i++) {
+      sum += tappedRhythm[i] - expected[i];
+    }
+    const averageOffsetSec = sum / sampleCount;
+    if (onCalibrationComplete) {
+      onCalibrationComplete({ averageOffsetSec, sampleCount });
+      calibrationSentRef.current = true;
+    }
+  }, [running, exerciseMode, elapsed, totalDuration, tappedRhythm, onCalibrationComplete]);
 
   // stop metronome when component unmounts
   // eslint-disable-next-line react-hooks/exhaustive-deps
