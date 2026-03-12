@@ -410,7 +410,10 @@ export default function RhythmArea({
                   })}
                 </div>
                 <div className="bar-progress" style={{ width: `${beats * beatValue * 3.3}cm` }}>
-                  <div className="bar-progress-fill" style={{ width: `${barProgressPct}%` }} />
+                  <div
+                    className="bar-progress-fill"
+                    style={{ transform: `scaleX(${barProgressPct / 100})` }}
+                  />
                   {expectedSlots.map((slotVal) => {
                     const pct = ((slotVal - 1) / totalSlotsInBar) * 100;
                     const missing = missingSlotSet.has(slotVal);
