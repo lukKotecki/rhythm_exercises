@@ -174,6 +174,7 @@ export default function RhythmArea({
   }
 
   function handleTapInput() {
+    if (!running || !startTimeRef.current) return;
     const now = audioCtx.current
       ? audioCtx.current.currentTime - startTimeRef.current
       : Date.now() / 1000 - startTimeRef.current;
@@ -182,6 +183,7 @@ export default function RhythmArea({
 
   // Evaluate every tap against the time-slot grid; compute per-bar accuracy
   useEffect(() => {
+    if (!running) return;
     const { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds } = timingMapRef.current;
     if (!barStarts.length) return;
 
@@ -289,21 +291,12 @@ export default function RhythmArea({
     }
   }, [barsData, running]);
 
-  // when running toggled off (pause), rewind progress but keep bars
-  // only clear the history if the exercise was stopped before finishing;
-  // if we've reached the end of the rhythm the results should remain visible.
+  // when running toggled off (pause/end), stop playback but keep markers/results visible
   useEffect(() => {
     if (!running && barsData.length > 0) {
-      // if we haven't yet played the whole duration, wipe the clicks/results
-      if (elapsed < totalDuration) {
-        setTappedRhythm([]);
-        setTapAssessments([]);
-        setBarAccuracy([]);
-        setMissingExpectedByBar([]);
-      }
       stopMetronome();
     }
-  }, [running, barsData, elapsed, totalDuration]);
+  }, [running, barsData]);
 
   return (
     <main
