@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 //   bars: 4,
 //   metronomeDelay: 0,
 //   tappedRhythmSyncPercent: 10,
+//   showExpectedRhythmGrid: true,
 //   metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 }
 // }
 
@@ -52,6 +53,10 @@ export default function Sidebar({ options, onChangeOptions, open }) {
   }
 
   function changeField(field, value) {
+    if (field === 'showExpectedRhythmGrid') {
+      onChangeOptions({ ...options, showExpectedRhythmGrid: !!value });
+      return;
+    }
     if (field === 'metronomeDelay') {
       const parsed = parseInt(value, 10);
       const clamped = Number.isNaN(parsed) ? 0 : Math.max(-300, Math.min(300, parsed));
@@ -314,6 +319,17 @@ export default function Sidebar({ options, onChangeOptions, open }) {
                 onChange={(e) => changeField('tappedRhythmSyncPercent', e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="field-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={options.showExpectedRhythmGrid ?? true}
+                onChange={(e) => changeField('showExpectedRhythmGrid', e.target.checked)}
+              />
+              Show expected rhythm grid on progress bar
+            </label>
           </div>
         </AccordionSection>
 

@@ -676,6 +676,29 @@
   box-shadow: 0 0 4px rgba(59, 130, 246, 0.65);
 }
 
+.bar-grid-marker {
+  position: absolute;
+  top: -1px;
+  width: 2px;
+  height: 8px;
+  border-radius: 1px;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.bar-grid-marker.expected {
+  background: rgba(34, 197, 94, 0.55);
+}
+
+.bar-grid-marker.expected.missing {
+  background: #3b82f6;
+  box-shadow: 0 0 4px rgba(59, 130, 246, 0.65);
+}
+
+.bar-grid-marker.unexpected {
+  background: rgba(239, 68, 68, 0.26);
+}
+
 .bar-progress-head {
   position: absolute;
   top: -5px;
