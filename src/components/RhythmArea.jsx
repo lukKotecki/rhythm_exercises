@@ -154,19 +154,27 @@ export default function RhythmArea({
     rafRef.current = requestAnimationFrame(update);
   }
 
-  function stopMetronome() {
+  function stopMetronome(notifyParent = true) {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-    if (onPause) onPause();
+    if (audioCtx.current) {
+      audioCtx.current.close();
+      audioCtx.current = null;
+    }
+    startTimeRef.current = null;
+    setCurrentBeat(-1);
+    setCurrentBar(-1);
+    if (notifyParent && onPause) onPause();
   }
 
   function handleKey(e) {
-    if (e.code === 'Space') {
+    if (e.code === 'Space' && running) {
       handleTapInput();
     } else if (e.code === 'Escape' || e.key === 's' || e.key === 'S') {
       stopMetronome();
@@ -174,6 +182,7 @@ export default function RhythmArea({
   }
 
   function handleTapInput() {
+    if (!running || !startTimeRef.current) return;
     const now = audioCtx.current
       ? audioCtx.current.currentTime - startTimeRef.current
       : Date.now() / 1000 - startTimeRef.current;
@@ -268,7 +277,7 @@ export default function RhythmArea({
   // stop metronome when component unmounts
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    return () => stopMetronome();
+    return () => stopMetronome(false);
   }, []);
 
   // global key listener (space for click, escape/s for stop)
@@ -301,7 +310,7 @@ export default function RhythmArea({
         setBarAccuracy([]);
         setMissingExpectedByBar([]);
       }
-      stopMetronome();
+      stopMetronome(false);
     }
   }, [running, barsData, elapsed, totalDuration]);
 
