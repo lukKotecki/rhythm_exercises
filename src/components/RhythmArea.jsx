@@ -12,6 +12,7 @@ export default function RhythmArea({
   timeSignature,
   metronomeDelay,
   tappedRhythmAccuracy,
+  userTapSyncPercent,
   metronomeSound,
   synchronization,
   exerciseMode,
@@ -90,7 +91,7 @@ export default function RhythmArea({
     });
 
     expectedByBarRef.current = expectedByBar;
-  expectedTapTimesRef.current = expectedTapTimes;
+    expectedTapTimesRef.current = expectedTapTimes;
     timingMapRef.current = { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds };
     setTotalDuration(time);
     // reset tracking
@@ -186,7 +187,8 @@ export default function RhythmArea({
 
     const manualDelaySec = (metronomeDelay || 0) / 100;
     const syncDelaySec = synchronization?.enabled ? (synchronization.averageOffsetSec || 0) : 0;
-    const totalDelaySec = manualDelaySec + syncDelaySec;
+    const userTapSyncDelaySec = beatDuration * ((userTapSyncPercent ?? 10) / 100);
+    const totalDelaySec = manualDelaySec + syncDelaySec + userTapSyncDelaySec;
 
     const assessments = [];
     // track which slots have already been matched exactly in each bar (once each)
@@ -241,7 +243,7 @@ export default function RhythmArea({
     setTapAssessments(assessments);
     setBarAccuracy(accRows);
     setMissingExpectedByBar(missingByBar);
-  }, [tappedRhythm, barsData, metronomeDelay, synchronization]);
+  }, [tappedRhythm, barsData, metronomeDelay, synchronization, userTapSyncPercent]);
 
   useEffect(() => {
     if (!running || exerciseMode !== 'delay-calibration' || elapsed < totalDuration || totalDuration <= 0) return;
@@ -342,9 +344,13 @@ export default function RhythmArea({
             const barProgressPct = barDuration > 0
               ? Math.min(100, Math.max(0, (elapsed - barStart) / barDuration * 100))
               : 0;
+            const userTapSyncDelaySec = beatValue * ((userTapSyncPercent ?? 10) / 100);
             // collect taps that fall in this bar with their global index
             const barTapped = tappedRhythm.reduce((acc, t, ti) => {
-              if (t >= barStart && t < barEnd) acc.push({ t, ti });
+              const syncedTapTime = t + userTapSyncDelaySec;
+              if (syncedTapTime >= barStart && syncedTapTime < barEnd) {
+                acc.push({ t: syncedTapTime, ti });
+              }
               return acc;
             }, []);
             const slotsPerBeat = timingMapRef.current.slotsPerBeat || 12;

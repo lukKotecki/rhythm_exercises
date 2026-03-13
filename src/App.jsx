@@ -20,6 +20,7 @@ function App() {
       bars: 4,
       metronomeDelay: 0,
       tappedRhythmAccuracy: 12,
+      tappedRhythmSyncPercent: 10,
       synchronization: { enabled: false, averageOffsetSec: 0, sampleCount: 0, calibratedAt: null },
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
     };
@@ -239,6 +240,7 @@ function App() {
               timeSignature={exerciseMode === 'delay-calibration' ? '4/4' : options.timeSignature}
               metronomeDelay={options.metronomeDelay}
               tappedRhythmAccuracy={options.tappedRhythmAccuracy}
+              userTapSyncPercent={options.tappedRhythmSyncPercent}
               metronomeSound={options.metronomeSound}
               synchronization={options.synchronization}
               exerciseMode={exerciseMode}

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 //   articulation: 'legato',
 //   bars: 4,
 //   metronomeDelay: 0,
+//   tappedRhythmSyncPercent: 10,
 //   metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 }
 // }
 
@@ -62,6 +63,12 @@ export default function Sidebar({ options, onChangeOptions, open }) {
       const bounded = Number.isNaN(parsed) ? 12 : Math.max(4, Math.min(100, parsed));
       const stepped = Math.round(bounded / 4) * 4;
       onChangeOptions({ ...options, tappedRhythmAccuracy: stepped });
+      return;
+    }
+    if (field === 'tappedRhythmSyncPercent') {
+      const parsed = parseInt(value, 10);
+      const bounded = Number.isNaN(parsed) ? 10 : Math.max(0, Math.min(25, parsed));
+      onChangeOptions({ ...options, tappedRhythmSyncPercent: bounded });
       return;
     }
     onChangeOptions({ ...options, [field]: value });
@@ -281,6 +288,30 @@ export default function Sidebar({ options, onChangeOptions, open }) {
                 step="4"
                 value={options.tappedRhythmAccuracy ?? 12}
                 onChange={(e) => changeField('tappedRhythmAccuracy', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="field-group">
+            <label className="field-label">
+              User tap sync: <strong>{options.tappedRhythmSyncPercent ?? 10}%</strong>
+            </label>
+            <div className="range-group">
+              <input
+                type="range"
+                min="0"
+                max="25"
+                step="1"
+                value={options.tappedRhythmSyncPercent ?? 10}
+                onChange={(e) => changeField('tappedRhythmSyncPercent', e.target.value)}
+              />
+              <input
+                type="number"
+                min="0"
+                max="25"
+                step="1"
+                value={options.tappedRhythmSyncPercent ?? 10}
+                onChange={(e) => changeField('tappedRhythmSyncPercent', e.target.value)}
               />
             </div>
           </div>
