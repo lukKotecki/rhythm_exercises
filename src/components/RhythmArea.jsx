@@ -7,6 +7,20 @@ function timeToSlot(offsetInBar, beatDuration, slotsPerBeat) {
   return Math.floor((offsetInBar / beatDuration) * slotsPerBeat) + 1;
 }
 
+function findClosestSlot(expectedSet, targetSlot, predicate = null) {
+  let bestSlot = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  expectedSet.forEach((slotVal) => {
+    if (predicate && !predicate(slotVal)) return;
+    const dist = Math.abs(slotVal - targetSlot);
+    if (dist < bestDistance) {
+      bestDistance = dist;
+      bestSlot = slotVal;
+    }
+  });
+  return { slot: bestSlot, distance: bestDistance };
+}
+
 export default function RhythmArea({
   barsData,
   timeSignature,
@@ -191,10 +205,9 @@ export default function RhythmArea({
     const { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds } = timingMapRef.current;
     if (!barStarts.length) return;
 
-    const manualDelaySec = (metronomeDelay || 0) / 100;
-    const syncDelaySec = synchronization?.enabled ? (synchronization.averageOffsetSec || 0) : 0;
+    const goodDistanceSlots = 1;
+    const nearDistanceSlots = 2;
     const userTapSyncDelaySec = beatDuration * ((userTapSyncPercent ?? 10) / 100);
-    const totalDelaySec = manualDelaySec + syncDelaySec + userTapSyncDelaySec;
 
     const assessments = [];
     // track which slots have already been matched exactly in each bar (once each)
@@ -202,30 +215,28 @@ export default function RhythmArea({
     const tapCountByBar = new Array(barsData.length).fill(0);
 
     tappedRhythm.forEach((tapTime, ti) => {
-      const correctedTapTime = tapTime - totalDelaySec;
-      const barIndex = barStarts.findIndex((start, idx) => correctedTapTime >= start && correctedTapTime < barEnds[idx]);
+      // Use the same timeline as visible click markers on the progress bar.
+      const displayTapTime = tapTime + userTapSyncDelaySec;
+      const barIndex = barStarts.findIndex((start, idx) => displayTapTime >= start && displayTapTime < barEnds[idx]);
       if (barIndex <= 0) { // warmup bar or before start: ignore
         assessments[ti] = { barIndex, slot: null, status: 'bad', correct: false };
         return;
       }
 
-      const offsetInBar = correctedTapTime - barStarts[barIndex];
+      const offsetInBar = displayTapTime - barStarts[barIndex];
       const slot = timeToSlot(offsetInBar, beatDuration, slotsPerBeat);
       const maxSlot = beatsPerBar * slotsPerBeat;
       const bounded = Math.max(1, Math.min(maxSlot, slot));
       const expected = expectedByBarRef.current[barIndex] || new Set();
-      const alreadyMatched = matchedByBar[barIndex].has(bounded);
+      const unmatchedClosest = findClosestSlot(expected, bounded, (slotVal) => !matchedByBar[barIndex].has(slotVal));
+      const anyClosest = findClosestSlot(expected, bounded);
 
       let status = 'bad';
-      if (expected.has(bounded) && !alreadyMatched) {
+      if (unmatchedClosest.slot !== null && unmatchedClosest.distance <= goodDistanceSlots) {
         status = 'good';
-        matchedByBar[barIndex].add(bounded);
-      } else {
-        const nearLeft = bounded - 1;
-        const nearRight = bounded + 1;
-        if (expected.has(nearLeft) || expected.has(nearRight)) {
-          status = 'near';
-        }
+        matchedByBar[barIndex].add(unmatchedClosest.slot);
+      } else if (anyClosest.slot !== null && anyClosest.distance <= nearDistanceSlots) {
+        status = 'near';
       }
 
       tapCountByBar[barIndex] += 1;
@@ -249,7 +260,7 @@ export default function RhythmArea({
     setTapAssessments(assessments);
     setBarAccuracy(accRows);
     setMissingExpectedByBar(missingByBar);
-  }, [tappedRhythm, barsData, metronomeDelay, synchronization, userTapSyncPercent]);
+  }, [tappedRhythm, barsData, userTapSyncPercent]);
 
   useEffect(() => {
     if (!running || exerciseMode !== 'delay-calibration' || elapsed < totalDuration || totalDuration <= 0) return;
