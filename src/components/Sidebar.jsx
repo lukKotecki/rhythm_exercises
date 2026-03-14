@@ -27,7 +27,16 @@ export default function Sidebar({ options, onChangeOptions, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
   const articulations = ['legato', 'extension', 'staccato'];
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
-  const waveforms = ['sine', 'square', 'triangle', 'sawtooth'];
+  const metronomeSounds = [
+    { value: 'sine', label: 'Sine' },
+    { value: 'square', label: 'Square' },
+    { value: 'triangle', label: 'Triangle' },
+    { value: 'sawtooth', label: 'Sawtooth' },
+    { value: 'cowbell', label: 'Cowbell' },
+    { value: 'woodblock', label: 'Woodblock' },
+    { value: 'clave', label: 'Clave' },
+    { value: 'hihat', label: 'Hi-hat' },
+  ];
 
   const [expanded, setExpanded] = useState(() => {
     try {
@@ -172,29 +181,6 @@ export default function Sidebar({ options, onChangeOptions, open }) {
 
         <AccordionSection id="metronome" title="Metronome settings">
           <div className="field-group">
-            <label className="field-label">
-              Delay: <strong>{(options.metronomeDelay / 100).toFixed(2)} s</strong>
-            </label>
-            <div className="range-group">
-              <input
-                type="range"
-                min="-300"
-                max="300"
-                step="1"
-                value={options.metronomeDelay}
-                onChange={(e) => changeField('metronomeDelay', e.target.value)}
-              />
-              <input
-                type="number"
-                min="-300"
-                max="300"
-                value={options.metronomeDelay}
-                onChange={(e) => changeField('metronomeDelay', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="field-group">
             <label className="field-label">Synchronization</label>
             {options.synchronization?.enabled ? (
               <div>
@@ -214,13 +200,13 @@ export default function Sidebar({ options, onChangeOptions, open }) {
           </div>
 
           <div className="field-group">
-            <label className="field-label">Waveform</label>
+            <label className="field-label">Sound</label>
             <select
               value={options.metronomeSound.waveform}
               onChange={(e) => changeSoundField('waveform', e.target.value)}
             >
-              {waveforms.map((w) => (
-                <option key={w} value={w}>{w}</option>
+              {metronomeSounds.map((soundOption) => (
+                <option key={soundOption.value} value={soundOption.value}>{soundOption.label}</option>
               ))}
             </select>
           </div>
@@ -272,7 +258,30 @@ export default function Sidebar({ options, onChangeOptions, open }) {
           </div>
         </AccordionSection>
 
-        <AccordionSection id="tappedRhythm" title="Tapped rhythm settings">
+        <AccordionSection id="tappedRhythm" title="Synchronization">
+          <div className="field-group">
+            <label className="field-label">
+              Metronome delay: <strong>{(options.metronomeDelay / 100).toFixed(2)} s</strong>
+            </label>
+            <div className="range-group">
+              <input
+                type="range"
+                min="-300"
+                max="300"
+                step="1"
+                value={options.metronomeDelay}
+                onChange={(e) => changeField('metronomeDelay', e.target.value)}
+              />
+              <input
+                type="number"
+                min="-300"
+                max="300"
+                value={options.metronomeDelay}
+                onChange={(e) => changeField('metronomeDelay', e.target.value)}
+              />
+            </div>
+          </div>
+
           <div className="field-group">
             <label className="field-label">
               Accuracy grid: <strong>{options.tappedRhythmAccuracy ?? 12}</strong>

@@ -7,6 +7,148 @@ function timeToSlot(offsetInBar, beatDuration, slotsPerBeat) {
   return Math.floor((offsetInBar / beatDuration) * slotsPerBeat) + 1;
 }
 
+const OSC_WAVEFORMS = new Set(['sine', 'square', 'triangle', 'sawtooth']);
+
+function playWaveClick(audioCtx, waveform, frequency, durationSec = 0.05) {
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = waveform;
+  osc.frequency.value = frequency;
+  gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + durationSec);
+}
+
+function playCowbellClick(audioCtx, frequency, isAccent) {
+  const durationSec = isAccent ? 0.11 : 0.09;
+  const gain = audioCtx.createGain();
+  const hp = audioCtx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 700;
+
+  const osc1 = audioCtx.createOscillator();
+  const osc2 = audioCtx.createOscillator();
+  osc1.type = 'square';
+  osc2.type = 'square';
+  osc1.frequency.value = frequency;
+  osc2.frequency.value = frequency * 1.48;
+
+  gain.gain.setValueAtTime(isAccent ? 0.55 : 0.42, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(hp);
+  hp.connect(audioCtx.destination);
+
+  osc1.start();
+  osc2.start();
+  osc1.stop(audioCtx.currentTime + durationSec);
+  osc2.stop(audioCtx.currentTime + durationSec);
+}
+
+function playWoodblockClick(audioCtx, frequency, isAccent) {
+  const durationSec = isAccent ? 0.08 : 0.06;
+  const osc = audioCtx.createOscillator();
+  const bp = audioCtx.createBiquadFilter();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'triangle';
+  osc.frequency.value = frequency * (isAccent ? 1.05 : 1);
+  bp.type = 'bandpass';
+  bp.frequency.value = frequency;
+  bp.Q.value = 12;
+
+  gain.gain.setValueAtTime(isAccent ? 0.5 : 0.35, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+
+  osc.connect(bp);
+  bp.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + durationSec);
+}
+
+function playClaveClick(audioCtx, frequency, isAccent) {
+  const durationSec = isAccent ? 0.06 : 0.05;
+  const osc = audioCtx.createOscillator();
+  const hp = audioCtx.createBiquadFilter();
+  const gain = audioCtx.createGain();
+
+  osc.type = 'square';
+  osc.frequency.value = frequency * (isAccent ? 1.15 : 1);
+  hp.type = 'highpass';
+  hp.frequency.value = 1200;
+
+  gain.gain.setValueAtTime(isAccent ? 0.45 : 0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+
+  osc.connect(hp);
+  hp.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + durationSec);
+}
+
+function playHiHatClick(audioCtx, isAccent) {
+  const durationSec = isAccent ? 0.05 : 0.035;
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * durationSec, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+
+  const hp = audioCtx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = isAccent ? 5000 : 6500;
+
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(isAccent ? 0.5 : 0.35, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+
+  src.connect(hp);
+  hp.connect(gain);
+  gain.connect(audioCtx.destination);
+  src.start();
+  src.stop(audioCtx.currentTime + durationSec);
+}
+
+function playMetronomeClick(audioCtx, soundConfig, isAccent) {
+  const sound = soundConfig || {};
+  const selected = sound.waveform || 'sine';
+  const baseFreq = isAccent ? (sound.accentFreq || 1500) : (sound.beatFreq || 1000);
+
+  if (OSC_WAVEFORMS.has(selected)) {
+    playWaveClick(audioCtx, selected, baseFreq, 0.05);
+    return;
+  }
+
+  switch (selected) {
+    case 'cowbell':
+      playCowbellClick(audioCtx, baseFreq, isAccent);
+      break;
+    case 'woodblock':
+      playWoodblockClick(audioCtx, baseFreq, isAccent);
+      break;
+    case 'clave':
+      playClaveClick(audioCtx, baseFreq, isAccent);
+      break;
+    case 'hihat':
+      playHiHatClick(audioCtx, isAccent);
+      break;
+    default:
+      playWaveClick(audioCtx, 'sine', baseFreq, 0.05);
+      break;
+  }
+}
+
 function findClosestSlot(expectedSet, targetSlot, predicate = null) {
   let bestSlot = null;
   let bestDistance = Number.POSITIVE_INFINITY;
@@ -151,15 +293,8 @@ export default function RhythmArea({
       setCurrentBeat(beat % beatsPerBar);
       setCurrentBar(Math.floor(beat / beatsPerBar));
 
-      const osc = audioCtx.current.createOscillator();
-      const sound = metronomeSound || {};
-      osc.type = sound.waveform || 'sine';
-      osc.frequency.value = (beat % beatsPerBar === 0)
-        ? (sound.accentFreq || 1500)
-        : (sound.beatFreq || 1000);
-      osc.connect(audioCtx.current.destination);
-      osc.start();
-      osc.stop(audioCtx.current.currentTime + 0.05);
+      const isAccent = beat % beatsPerBar === 0;
+      playMetronomeClick(audioCtx.current, metronomeSound, isAccent);
       beat += 1;
     };
 
