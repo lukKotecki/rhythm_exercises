@@ -35,6 +35,7 @@ export default function RhythmArea({
   const startTimeRef = useRef(null);
   const rafRef = useRef(null);
   const calibrationSentRef = useRef(false);
+  const finishedNaturallyRef = useRef(false);
   const [currentBeat, setCurrentBeat] = useState(-1);
   const [currentBar, setCurrentBar] = useState(-1);
 
@@ -96,6 +97,7 @@ export default function RhythmArea({
     timingMapRef.current = { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds };
     setTotalDuration(time);
     // reset tracking
+    finishedNaturallyRef.current = false;
     setTappedRhythm([]);
     setTapAssessments([]);
     setBarAccuracy([]);
@@ -106,6 +108,7 @@ export default function RhythmArea({
   function startMetronome() {
     audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
     startTimeRef.current = audioCtx.current.currentTime;
+    finishedNaturallyRef.current = false;
     // reset elapsed
     setElapsed(0);
     // determine beats per bar and beat value from timeSignature
@@ -125,6 +128,8 @@ export default function RhythmArea({
     const playBeat = () => {
       // stop once we've played the requested number of beats
       if (beat >= totalBeats) {
+        finishedNaturallyRef.current = true;
+        setElapsed(totalDuration);
         stopMetronome();
         return;
       }
@@ -296,7 +301,8 @@ export default function RhythmArea({
   useEffect(() => {
     if (!running && barsData.length > 0) {
       // if we haven't yet played the whole duration, wipe the clicks/results
-      if (elapsed < totalDuration) {
+      const completed = finishedNaturallyRef.current || elapsed >= totalDuration;
+      if (!completed) {
         setTappedRhythm([]);
         setTapAssessments([]);
         setBarAccuracy([]);
