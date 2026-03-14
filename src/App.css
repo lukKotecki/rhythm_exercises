@@ -220,18 +220,20 @@
   }
 }
 
-/* Large screens: arrange sidebar content into two columns to avoid scrolling */
+/* Large screens: keep sidebar options in one vertical column */
 @media (min-width: 1280px) {
   .sidebar {
     width: 16.6667vw;
     padding: 1rem;
-    overflow: visible;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   .sidebar-inner {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem 1rem;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
   }
   .sidebar section {
     margin: 0;
