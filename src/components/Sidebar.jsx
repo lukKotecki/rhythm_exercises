@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 //   timeSignature: '4/4',
 //   articulation: 'legato',
 //   bars: 4,
-//   metronomeDelay: 0,
 //   tappedRhythmSyncPercent: 10,
 //   showExpectedRhythmGrid: true,
 //   metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 }
@@ -23,7 +22,7 @@ const DEFAULT_EXPANDED = {
   tappedRhythm: false,
 };
 
-export default function Sidebar({ options, onChangeOptions, open }) {
+export default function Sidebar({ options, onChangeOptions, onGenerateSynchronizationRhythm, running, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
   const articulations = ['legato', 'extension', 'staccato'];
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
@@ -64,12 +63,6 @@ export default function Sidebar({ options, onChangeOptions, open }) {
   function changeField(field, value) {
     if (field === 'showExpectedRhythmGrid') {
       onChangeOptions({ ...options, showExpectedRhythmGrid: !!value });
-      return;
-    }
-    if (field === 'metronomeDelay') {
-      const parsed = parseInt(value, 10);
-      const clamped = Number.isNaN(parsed) ? 0 : Math.max(-300, Math.min(300, parsed));
-      onChangeOptions({ ...options, metronomeDelay: clamped });
       return;
     }
     if (field === 'tappedRhythmAccuracy') {
@@ -210,25 +203,6 @@ export default function Sidebar({ options, onChangeOptions, open }) {
           </div>
 
           <div className="field-group">
-            <label className="field-label">Synchronization</label>
-            {options.synchronization?.enabled ? (
-              <div>
-                <div>
-                  Avg offset: <strong>{(options.synchronization.averageOffsetSec || 0).toFixed(3)} s</strong>
-                </div>
-                <div>
-                  Samples: <strong>{options.synchronization.sampleCount || 0}</strong>
-                </div>
-                <div>
-                  Saved: <strong>{options.synchronization.calibratedAt ? new Date(options.synchronization.calibratedAt).toLocaleString() : '-'}</strong>
-                </div>
-              </div>
-            ) : (
-              <div>No calibration saved yet. Use Delay button in header.</div>
-            )}
-          </div>
-
-          <div className="field-group">
             <label className="field-label">Sound</label>
             <select
               value={options.metronomeSound.waveform}
@@ -289,26 +263,13 @@ export default function Sidebar({ options, onChangeOptions, open }) {
 
         <AccordionSection id="tappedRhythm" title="Synchronization">
           <div className="field-group">
-            <label className="field-label">
-              Metronome delay: <strong>{(options.metronomeDelay / 100).toFixed(2)} s</strong>
-            </label>
-            <div className="range-group">
-              <input
-                type="range"
-                min="-300"
-                max="300"
-                step="1"
-                value={options.metronomeDelay}
-                onChange={(e) => changeField('metronomeDelay', e.target.value)}
-              />
-              <input
-                type="number"
-                min="-300"
-                max="300"
-                value={options.metronomeDelay}
-                onChange={(e) => changeField('metronomeDelay', e.target.value)}
-              />
-            </div>
+            <button
+              className="start-button"
+              onClick={onGenerateSynchronizationRhythm}
+              disabled={running}
+            >
+              Generate synchronization rhythm
+            </button>
           </div>
 
           <div className="field-group">

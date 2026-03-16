@@ -166,12 +166,10 @@ function findClosestSlot(expectedSet, targetSlot, predicate = null) {
 export default function RhythmArea({
   barsData,
   timeSignature,
-  metronomeDelay,
   tappedRhythmAccuracy,
   userTapSyncPercent,
   showExpectedRhythmGrid,
   metronomeSound,
-  synchronization,
   bpm = 60,
   exerciseMode,
   running,

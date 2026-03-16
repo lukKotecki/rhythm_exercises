@@ -8,7 +8,6 @@ export default function Header({
   onStart,
   onPause,
   onReset,
-  onDelayCalibration,
   running,
   hasBars,
 }) {
@@ -44,9 +43,6 @@ export default function Header({
         </button>
         <button className="start-button header-action" onClick={onReset} disabled={running || !hasBars}>
           Reset
-        </button>
-        <button className="start-button header-action" onClick={onDelayCalibration} disabled={running}>
-          Delay
         </button>
       </div>
 

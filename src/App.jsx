@@ -18,12 +18,10 @@ function App() {
       timeSignature: '4/4',
       articulation: 'legato',
       bars: 4,
-      metronomeDelay: 0,
       bpm: 60,
       tappedRhythmAccuracy: 12,
       tappedRhythmSyncPercent: 0,
       showExpectedRhythmGrid: true,
-      synchronization: { enabled: false, averageOffsetSec: 0, sampleCount: 0, calibratedAt: null },
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
     };
     try {
@@ -33,7 +31,6 @@ function App() {
         return {
           ...defaults,
           ...parsed,
-          synchronization: { ...defaults.synchronization, ...(parsed.synchronization || {}) },
           metronomeSound: { ...defaults.metronomeSound, ...(parsed.metronomeSound || {}) },
         };
       }
@@ -198,15 +195,6 @@ function App() {
 
   function handleCalibrationComplete(payload) {
     if (!payload || typeof payload.averageOffsetSec !== 'number') return;
-    setOptions((prev) => ({
-      ...prev,
-      synchronization: {
-        enabled: true,
-        averageOffsetSec: payload.averageOffsetSec,
-        sampleCount: payload.sampleCount,
-        calibratedAt: Date.now(),
-      },
-    }));
     setExerciseMode('normal');
   }
 
@@ -223,7 +211,6 @@ function App() {
         onStart={handleStart}
         onPause={handlePause}
         onReset={handleReset}
-        onDelayCalibration={handleDelayCalibration}
         running={running}
         hasBars={barsData.length > 0}
       />
@@ -232,6 +219,8 @@ function App() {
           <Sidebar
             options={options}
             onChangeOptions={setOptions}
+            onGenerateSynchronizationRhythm={handleDelayCalibration}
+            running={running}
             open={sidebarOpen}
           />
         )}
@@ -240,12 +229,10 @@ function App() {
             <RhythmArea
               barsData={barsData}
               timeSignature={exerciseMode === 'delay-calibration' ? '4/4' : options.timeSignature}
-              metronomeDelay={options.metronomeDelay}
               tappedRhythmAccuracy={options.tappedRhythmAccuracy}
               userTapSyncPercent={options.tappedRhythmSyncPercent}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
               metronomeSound={options.metronomeSound}
-              synchronization={options.synchronization}
               bpm={options.bpm}
               exerciseMode={exerciseMode}
               running={running}
