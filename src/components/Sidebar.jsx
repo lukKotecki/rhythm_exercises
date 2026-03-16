@@ -81,8 +81,14 @@ export default function Sidebar({ options, onChangeOptions, open }) {
     }
     if (field === 'tappedRhythmSyncPercent') {
       const parsed = parseInt(value, 10);
-      const bounded = Number.isNaN(parsed) ? 10 : Math.max(0, Math.min(25, parsed));
+      const bounded = Number.isNaN(parsed) ? 0 : Math.max(-50, Math.min(50, parsed));
       onChangeOptions({ ...options, tappedRhythmSyncPercent: bounded });
+      return;
+    }
+    if (field === 'bpm') {
+      const parsed = parseInt(value, 10);
+      const bounded = Number.isNaN(parsed) ? 60 : Math.max(30, Math.min(300, parsed));
+      onChangeOptions({ ...options, bpm: bounded });
       return;
     }
     onChangeOptions({ ...options, [field]: value });
@@ -180,6 +186,29 @@ export default function Sidebar({ options, onChangeOptions, open }) {
         </AccordionSection>
 
         <AccordionSection id="metronome" title="Metronome settings">
+          <div className="field-group">
+            <label className="field-label">
+              Tempo: <strong>{options.bpm ?? 60} BPM</strong>
+            </label>
+            <div className="range-group">
+              <input
+                type="range"
+                min="30"
+                max="300"
+                step="1"
+                value={options.bpm ?? 60}
+                onChange={(e) => changeField('bpm', e.target.value)}
+              />
+              <input
+                type="number"
+                min="30"
+                max="300"
+                value={options.bpm ?? 60}
+                onChange={(e) => changeField('bpm', e.target.value)}
+              />
+            </div>
+          </div>
+
           <div className="field-group">
             <label className="field-label">Synchronization</label>
             {options.synchronization?.enabled ? (
@@ -308,23 +337,23 @@ export default function Sidebar({ options, onChangeOptions, open }) {
 
           <div className="field-group">
             <label className="field-label">
-              User tap sync: <strong>{options.tappedRhythmSyncPercent ?? 10}%</strong>
+              User tap sync: <strong>{options.tappedRhythmSyncPercent ?? 0}%</strong>
             </label>
             <div className="range-group">
               <input
                 type="range"
-                min="0"
-                max="25"
+                min="-50"
+                max="50"
                 step="1"
-                value={options.tappedRhythmSyncPercent ?? 10}
+                value={options.tappedRhythmSyncPercent ?? 0}
                 onChange={(e) => changeField('tappedRhythmSyncPercent', e.target.value)}
               />
               <input
                 type="number"
-                min="0"
-                max="25"
+                min="-50"
+                max="50"
                 step="1"
-                value={options.tappedRhythmSyncPercent ?? 10}
+                value={options.tappedRhythmSyncPercent ?? 0}
                 onChange={(e) => changeField('tappedRhythmSyncPercent', e.target.value)}
               />
             </div>

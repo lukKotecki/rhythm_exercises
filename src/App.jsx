@@ -19,8 +19,9 @@ function App() {
       articulation: 'legato',
       bars: 4,
       metronomeDelay: 0,
+      bpm: 60,
       tappedRhythmAccuracy: 12,
-      tappedRhythmSyncPercent: 10,
+      tappedRhythmSyncPercent: 0,
       showExpectedRhythmGrid: true,
       synchronization: { enabled: false, averageOffsetSec: 0, sampleCount: 0, calibratedAt: null },
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
@@ -245,6 +246,7 @@ function App() {
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
               metronomeSound={options.metronomeSound}
               synchronization={options.synchronization}
+              bpm={options.bpm}
               exerciseMode={exerciseMode}
               running={running}
               onPause={handlePause}

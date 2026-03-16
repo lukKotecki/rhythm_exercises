@@ -172,6 +172,7 @@ export default function RhythmArea({
   showExpectedRhythmGrid,
   metronomeSound,
   synchronization,
+  bpm = 60,
   exerciseMode,
   running,
   onPause,
@@ -198,8 +199,6 @@ export default function RhythmArea({
     if (typeof window === 'undefined' || !window.matchMedia) return false;
     return window.matchMedia('(max-width: 767px)').matches;
   });
-  const barsContainerRef = useRef(null);
-  const [containerWidth, setContainerWidth] = useState(0);
 
   // per-bar expected slot Sets (index 0 = warmup, skipped during evaluation)
   const expectedByBarRef = useRef([]);
@@ -225,8 +224,8 @@ export default function RhythmArea({
       if (!Number.isNaN(n)) beatsPerBar = n;
       if (!Number.isNaN(d)) beatValue = 4 / d;
     }
-    // beatDuration = beatsValue seconds at fixed 60 BPM (1 quarter-note = 1 s)
-    const beatDuration = beatValue;
+    // beatDuration in real seconds: at 60 BPM = beatValue s, at 80 BPM = beatValue * 0.75 s
+    const beatDuration = beatValue * (60 / bpm);
     const slotsPerBeat = Math.max(4, Math.min(100, tappedRhythmAccuracy || 12));
 
     let time = 0;
@@ -247,8 +246,9 @@ export default function RhythmArea({
           const maxSlot = beatsPerBar * slotsPerBeat;
           slots.add(Math.max(1, Math.min(maxSlot, slot)));
         }
-        offsetInBar += note.duration;
-        time += note.duration;
+        const noteDurationSec = note.duration * (60 / bpm);
+        offsetInBar += noteDurationSec;
+        time += noteDurationSec;
       });
       barEnds.push(time);
       expectedByBar.push(slots);
@@ -265,7 +265,7 @@ export default function RhythmArea({
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
     calibrationSentRef.current = false;
-  }, [barsData, timeSignature, tappedRhythmAccuracy]);
+  }, [barsData, timeSignature, tappedRhythmAccuracy, bpm]);
 
   function startMetronome() {
     audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -283,8 +283,8 @@ export default function RhythmArea({
       if (!isNaN(n)) beatsPerBar = n;
       if (!isNaN(d)) beatValue = 4 / d;
     }
-    // beatValue * 1000 = ms per metronome tick at fixed 60 BPM
-    const beatIntervalMs = beatValue * 1000;
+    // scale by 60/bpm so that at 60 BPM one beat = 1 s, at 80 BPM = 0.75 s, etc.
+    const beatIntervalMs = beatValue * (60 / bpm) * 1000;
     let beat = 0;
     const totalBeats = beatsPerBar * barsData.length;
     const playBeat = () => {
@@ -454,18 +454,6 @@ export default function RhythmArea({
     return () => media.removeListener(handleChange);
   }, []);
 
-  useEffect(() => {
-    const el = barsContainerRef.current;
-    if (!el) return undefined;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerWidth(entry.contentRect.width);
-      }
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
   // start metronome when barsData is available
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -501,20 +489,15 @@ export default function RhythmArea({
       {barsData.length === 0 ? (
         <p>Press "Start" to generate rhythm.</p>
       ) : (
-        <div className="bars" ref={barsContainerRef}>
+        <div className="bars">
           {(() => {
-            // compute bar start times in seconds (60BPM: duration in quarter-notes = seconds)
-            const barStartTimes = [];
-            let _t = 0;
-            barsData.forEach((bar) => {
-              barStartTimes.push(_t);
-              bar.forEach((note) => { _t += note.duration; });
-            });
-            barStartTimes.push(_t);
+            // use the pre-computed timing map (already scaled by BPM) instead of
+            // re-accumulating raw note durations which would be in quarter-note units
+            const { barStarts: tmBarStarts, barEnds: tmBarEnds, beatDuration: tmBeatDuration } = timingMapRef.current;
             return barsData.map((bar, i) => {
             // compute beats per bar and beat value from time signature
             let beats = 4;
-            let beatValue = 1; // quarter note = 1cm
+            let beatValue = 1; // quarter note = 1 unit
             if (timeSignature) {
               const [numStr, denomStr] = timeSignature.split('/');
               const n = parseInt(numStr, 10);
@@ -524,13 +507,14 @@ export default function RhythmArea({
               if (!isNaN(d)) beatValue = 4 / d;
             }
             const isActiveBar = i === currentBar;
-            const barStart = barStartTimes[i];
-            const barEnd = barStartTimes[i + 1];
+            const barStart = tmBarStarts[i] ?? 0;
+            const barEnd = tmBarEnds[i] ?? barStart;
             const barDuration = barEnd - barStart;
             const barProgressPct = barDuration > 0
               ? Math.min(100, Math.max(0, (elapsed - barStart) / barDuration * 100))
               : 0;
-            const userTapSyncDelaySec = beatValue * ((userTapSyncPercent ?? 10) / 100);
+            // userTapSyncDelaySec must be in real seconds — use BPM-scaled beatDuration
+            const userTapSyncDelaySec = (tmBeatDuration || beatValue) * ((userTapSyncPercent ?? 10) / 100);
             // collect taps that fall in this bar with their global index
             const barTapped = tappedRhythm.reduce((acc, t, ti) => {
               const syncedTapTime = t + userTapSyncDelaySec;
@@ -544,19 +528,29 @@ export default function RhythmArea({
             const expectedSlots = [...(expectedByBarRef.current[i] || new Set())].sort((a, b) => a - b);
             const expectedSlotSet = new Set(expectedSlots);
             const missingSlotSet = new Set(missingExpectedByBar[i] || []);
-            let barUnit = 3.3;
-            let barUnitSuffix = 'cm';
-            if (isSmallScreen && containerWidth > 0) {
-              barUnit = containerWidth / (beats * beatValue);
-              barUnitSuffix = 'px';
-            }
-            const barWidth = beats * beatValue * barUnit;
+            const totalBarDuration = beats * beatValue; // in quarter-note units
+
+            // Mobile: percentage-based layout so each bar fills full container width.
+            // Desktop: fixed cm-based layout.
+            const barWidthStr = isSmallScreen ? '100%' : `${totalBarDuration * 3.3}cm`;
+            const getBeatBoxLeft = (beatIdx) => isSmallScreen
+              ? `${(beatIdx / beats) * 100}%`
+              : `${beatIdx * beatValue * 3.3}cm`;
+            const beatBoxWidthStr = isSmallScreen
+              ? `${(1 / beats) * 100}%`
+              : `${beatValue * 3.3}cm`;
+            const getNoteWidth = (dur) => isSmallScreen
+              ? `${(dur / totalBarDuration) * 100}%`
+              : `${(dur / beatValue) * beatValue * 3.3}cm`;
+            const getCountLeft = (j) => isSmallScreen
+              ? `${((j + 0.5) / beats) * 100}%`
+              : `${(j * beatValue + beatValue / 2) * 3.3}cm`;
+
             return (
               <div key={i} className="bar-wrapper">
-                <div className="bar" style={{ width: `${barWidth}${barUnitSuffix}` }}>
+                <div className="bar" style={{ width: barWidthStr }}>
                   {/* beat-box visual containers */}
                   {Array.from({ length: beats }, (_, beatIdx) => {
-                    const beatBoxWidth = beatValue * barUnit;
                     const isActiveBeatBox = i === currentBar && beatIdx === currentBeat;
                     return (
                       <div
@@ -564,49 +558,36 @@ export default function RhythmArea({
                         className={`beat-box${isActiveBeatBox ? ' active' : ''}`}
                         style={{
                           position: 'absolute',
-                          left: `${beatIdx * beatBoxWidth}${barUnitSuffix}`,
+                          left: getBeatBoxLeft(beatIdx),
                           top: 0,
                           bottom: 0,
-                          width: `${beatBoxWidth}${barUnitSuffix}`,
+                          width: beatBoxWidthStr,
                         }}
                       />
                     );
                   })}
-                  {(() => {
-                    const beatBoxWidth = beatValue * barUnit;
-                    return bar.map((note, j) => {
-                      const noteWidth = (note.duration / beatValue) * beatBoxWidth;
-                      return (
-                        <span
-                          key={j}
-                          className={`note ${note.type}${note.accent ? ' accent' : ''}`}
-                          style={{ width: `${noteWidth}${barUnitSuffix}`, flex: '0 0 auto' }}
-                        >
-                          {note.symbol || note.value}
-                        </span>
-                      );
-                    });
-                  })()}
+                  {bar.map((note, j) => (
+                    <span
+                      key={j}
+                      className={`note ${note.type}${note.accent ? ' accent' : ''}`}
+                      style={{ width: getNoteWidth(note.duration), flex: '0 0 auto' }}
+                    >
+                      {note.symbol || note.value}
+                    </span>
+                  ))}
                 </div>
-                <div className="count-bar" style={{ width: `${barWidth}${barUnitSuffix}` }}>
-                  {i === 0 && timeSignature && (
-                    <span className="meter">{timeSignature}</span>
-                  )}
-                  {Array.from({ length: beats }, (_, j) => {
-                    const beatBoxWidth = beatValue * barUnit;
-                    const countPosition = j * beatBoxWidth + beatBoxWidth / 2;
-                    return (
-                      <span
-                        key={j}
-                        className={`count${isActiveBar && currentBeat === j ? ' active' : ''}`}
-                        style={{ left: `${countPosition}${barUnitSuffix}` }}
-                      >
-                        {j + 1}
-                      </span>
-                    );
-                  })}
+                <div className="count-bar" style={{ width: barWidthStr }}>
+                  {Array.from({ length: beats }, (_, j) => (
+                    <span
+                      key={j}
+                      className={`count${isActiveBar && currentBeat === j ? ' active' : ''}`}
+                      style={{ left: getCountLeft(j) }}
+                    >
+                      {j + 1}
+                    </span>
+                  ))}
                 </div>
-                <div className="bar-progress" style={{ width: `${barWidth}${barUnitSuffix}` }}>
+                <div className="bar-progress" style={{ width: barWidthStr }}>
                   <div
                     className="bar-progress-fill"
                     style={{ transform: `scaleX(${barProgressPct / 100})` }}

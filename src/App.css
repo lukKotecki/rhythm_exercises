@@ -881,14 +881,19 @@
     font-size: 0.8rem;
   }
 
+  .bar-wrapper {
+    width: 100%;
+  }
+
   .note {
-    font-size: 0.9rem;
+    font-size: clamp(0.5rem, 3.5vw, 0.85rem);
     overflow: hidden;
+    min-width: 0;
   }
 
   .accent-marker {
     margin-right: 0.05rem;
-    font-size: 0.8rem;
+    font-size: clamp(0.45rem, 3vw, 0.75rem);
   }
 
   .count-bar {
