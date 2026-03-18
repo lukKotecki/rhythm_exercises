@@ -365,21 +365,39 @@ export default function RhythmArea({
       const offsetInBar = displayTapTime - barStarts[barIndex];
       const slot = timeToSlot(offsetInBar, beatDuration, slotsPerBeat);
       const maxSlot = beatsPerBar * slotsPerBeat;
-      const bounded = Math.max(1, Math.min(maxSlot, slot));
-      const expected = expectedByBarRef.current[barIndex] || new Set();
-      const unmatchedClosest = findClosestSlot(expected, bounded, (slotVal) => !matchedByBar[barIndex].has(slotVal));
+      let bounded = Math.max(1, Math.min(maxSlot, slot));
+      let effectiveBarIndex = barIndex;
+
+      // If tap lands just before next bar start, allow it to count as slot 1 in next bar.
+      const nextBarIndex = barIndex + 1;
+      if (nextBarIndex > 0 && nextBarIndex < barStarts.length) {
+        const nextStart = barStarts[nextBarIndex];
+        const slotDurationSec = beatDuration / slotsPerBeat;
+        const boundaryToleranceSec = goodDistanceSlots * slotDurationSec;
+        const earlyForNextBar = displayTapTime < nextStart && (nextStart - displayTapTime) <= boundaryToleranceSec;
+        const nextExpected = expectedByBarRef.current[nextBarIndex] || new Set();
+        const nextSlotAvailable = nextExpected.has(1) && !matchedByBar[nextBarIndex].has(1);
+
+        if (earlyForNextBar && nextSlotAvailable) {
+          effectiveBarIndex = nextBarIndex;
+          bounded = 1;
+        }
+      }
+
+      const expected = expectedByBarRef.current[effectiveBarIndex] || new Set();
+      const unmatchedClosest = findClosestSlot(expected, bounded, (slotVal) => !matchedByBar[effectiveBarIndex].has(slotVal));
       const anyClosest = findClosestSlot(expected, bounded);
 
       let status = 'bad';
       if (unmatchedClosest.slot !== null && unmatchedClosest.distance <= goodDistanceSlots) {
         status = 'good';
-        matchedByBar[barIndex].add(unmatchedClosest.slot);
+        matchedByBar[effectiveBarIndex].add(unmatchedClosest.slot);
       } else if (anyClosest.slot !== null && anyClosest.distance <= nearDistanceSlots) {
         status = 'near';
       }
 
-      tapCountByBar[barIndex] += 1;
-      assessments[ti] = { barIndex, slot: bounded, status, correct: status === 'good' };
+      tapCountByBar[effectiveBarIndex] += 1;
+      assessments[ti] = { barIndex: effectiveBarIndex, slot: bounded, status, correct: status === 'good' };
     });
 
     const accRows = [];
