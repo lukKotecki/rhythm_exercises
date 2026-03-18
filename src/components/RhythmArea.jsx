@@ -189,6 +189,8 @@ export default function RhythmArea({
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const rafRef = useRef(null);
+  const startTokenRef = useRef(0);
+  const audioPrimedRef = useRef(false);
   const calibrationSentRef = useRef(false);
   const finishedNaturallyRef = useRef(false);
   const [currentBeat, setCurrentBeat] = useState(-1);
@@ -265,9 +267,45 @@ export default function RhythmArea({
     calibrationSentRef.current = false;
   }, [barsData, timeSignature, tappedRhythmAccuracy, bpm]);
 
-  function startMetronome() {
-    audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
-    startTimeRef.current = audioCtx.current.currentTime;
+  async function ensureAudioReady() {
+    if (!audioCtx.current) {
+      audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.current.state === 'suspended') {
+      try {
+        await audioCtx.current.resume();
+      } catch {
+        // Keep trying on next user interaction.
+      }
+    }
+    if (!audioPrimedRef.current) {
+      const osc = audioCtx.current.createOscillator();
+      const gain = audioCtx.current.createGain();
+      gain.gain.value = 0.0001;
+      osc.connect(gain);
+      gain.connect(audioCtx.current.destination);
+      osc.start();
+      osc.stop(audioCtx.current.currentTime + 0.01);
+      audioPrimedRef.current = true;
+    }
+    return audioCtx.current;
+  }
+
+  async function startMetronome() {
+    const startToken = ++startTokenRef.current;
+    const ctx = await ensureAudioReady();
+    if (startToken !== startTokenRef.current) return;
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    startTimeRef.current = ctx.currentTime;
     finishedNaturallyRef.current = false;
     // reset elapsed
     setElapsed(0);
@@ -298,7 +336,7 @@ export default function RhythmArea({
       setCurrentBar(Math.floor(beat / beatsPerBar));
 
       const isAccent = beat % beatsPerBar === 0;
-      playMetronomeClick(audioCtx.current, metronomeSound, isAccent);
+      playMetronomeClick(ctx, metronomeSound, isAccent);
       beat += 1;
     };
 
@@ -307,15 +345,17 @@ export default function RhythmArea({
     intervalRef.current = setInterval(playBeat, beatIntervalMs);
     // start animation frame for elapsed
     function update() {
-      setElapsed(audioCtx.current.currentTime - startTimeRef.current);
+      setElapsed(ctx.currentTime - startTimeRef.current);
       rafRef.current = requestAnimationFrame(update);
     }
     rafRef.current = requestAnimationFrame(update);
   }
 
   function stopMetronome() {
+    startTokenRef.current += 1;
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
@@ -453,6 +493,19 @@ export default function RhythmArea({
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Prime audio engine on first user gesture to avoid initial click latency.
+  useEffect(() => {
+    const prime = () => {
+      void ensureAudioReady();
+    };
+    window.addEventListener('pointerdown', prime, { passive: true });
+    window.addEventListener('keydown', prime);
+    return () => {
+      window.removeEventListener('pointerdown', prime);
+      window.removeEventListener('keydown', prime);
+    };
   }, []);
 
   useEffect(() => {
