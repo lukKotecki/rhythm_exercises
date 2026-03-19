@@ -616,7 +616,7 @@ export default function RhythmArea({
               : `${(j * beatValue + beatValue / 2) * 3.3}cm`;
 
             return (
-              <div key={i} className="bar-wrapper">
+              <div key={i} className={`bar-wrapper${i === 0 ? ' count-in-row' : ''}`}>
                 <div className="bar" style={{ width: barWidthStr }}>
                   {/* beat-box visual containers */}
                   {Array.from({ length: beats }, (_, beatIdx) => {

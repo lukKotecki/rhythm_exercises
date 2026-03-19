@@ -573,6 +573,7 @@
   transition: background 0.2s;
   width: 1.8rem;
   transform: translateX(-50%);
+  user-select: none;
 }
 
 .count-bar .count.active {
@@ -584,6 +585,10 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+.bars .bar-wrapper.count-in-row {
+  flex-basis: 100%;
 }
 
 @media (min-width: 768px) {
@@ -609,6 +614,7 @@
   gap: 0;
   height: 2.5rem;
   box-sizing: border-box;
+  user-select: none;
 }
 
 .bar:hover {
@@ -661,6 +667,7 @@
   font-size: 1.5rem; /* larger notes */
   padding-left: 0.1rem;
   transition: all 0.2s;
+  user-select: none;
 }
 
 /* .note.active: highlight handled by beat-box instead */
@@ -904,6 +911,7 @@
 
   .count-bar .count {
     width: 1.5rem;
+    user-select: none;
   }
 
   .count-bar .meter {
