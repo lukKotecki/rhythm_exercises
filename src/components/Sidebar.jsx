@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 //   articulation: 'legato',
 //   bars: 4,
 //   tappedRhythmSyncPercent: 10,
+//   showMovingProgressIndicator: true,
 //   showExpectedRhythmGrid: true,
 //   metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 }
 // }
@@ -200,6 +201,17 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
                 onChange={(e) => changeField('bpm', e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="field-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={options.showMovingProgressIndicator ?? true}
+                onChange={(e) => changeField('showMovingProgressIndicator', e.target.checked)}
+              />
+              Show moving progress indicator
+            </label>
           </div>
 
           <div className="field-group">

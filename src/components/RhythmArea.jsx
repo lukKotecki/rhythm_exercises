@@ -168,6 +168,7 @@ export default function RhythmArea({
   timeSignature,
   tappedRhythmAccuracy,
   userTapSyncPercent,
+  showMovingProgressIndicator = true,
   showExpectedRhythmGrid,
   metronomeSound,
   bpm = 60,
@@ -657,10 +658,12 @@ export default function RhythmArea({
                   ))}
                 </div>
                 <div className="bar-progress" style={{ width: barWidthStr }}>
-                  <div
-                    className="bar-progress-fill"
-                    style={{ transform: `scaleX(${barProgressPct / 100})` }}
-                  />
+                  {showMovingProgressIndicator !== false && (
+                    <div
+                      className="bar-progress-fill"
+                      style={{ transform: `scaleX(${barProgressPct / 100})` }}
+                    />
+                  )}
                   {showExpectedRhythmGrid !== false && Array.from({ length: totalSlotsInBar }, (_, idx) => idx + 1).map((slotVal) => {
                     const pct = ((slotVal - 1) / totalSlotsInBar) * 100;
                     const isExpected = expectedSlotSet.has(slotVal);
@@ -687,7 +690,7 @@ export default function RhythmArea({
                       />
                     );
                   })}
-                  {running && i === currentBar && (
+                  {showMovingProgressIndicator !== false && running && i === currentBar && (
                     <span
                       className="bar-progress-head"
                       style={{ left: `${barProgressPct}%` }}

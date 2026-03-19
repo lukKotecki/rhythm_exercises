@@ -780,6 +780,7 @@
   border-radius: 8px;
   border-left: 4px solid #818cf8;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  user-select: none;
 }
 
 .results .correct {

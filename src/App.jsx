@@ -21,6 +21,7 @@ function App() {
       bpm: 60,
       tappedRhythmAccuracy: 12,
       tappedRhythmSyncPercent: 0,
+      showMovingProgressIndicator: true,
       showExpectedRhythmGrid: true,
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
     };
@@ -231,6 +232,7 @@ function App() {
               timeSignature={exerciseMode === 'delay-calibration' ? '4/4' : options.timeSignature}
               tappedRhythmAccuracy={options.tappedRhythmAccuracy}
               userTapSyncPercent={options.tappedRhythmSyncPercent}
+              showMovingProgressIndicator={options.showMovingProgressIndicator}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
               metronomeSound={options.metronomeSound}
               bpm={options.bpm}
