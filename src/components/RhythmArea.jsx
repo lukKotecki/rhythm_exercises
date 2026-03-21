@@ -174,6 +174,8 @@ export default function RhythmArea({
   bpm = 60,
   exerciseMode,
   running,
+  pausedElapsed = 0,
+  onElapsedChange,
   onPause,
   onCalibrationComplete,
 }) {
@@ -306,10 +308,12 @@ export default function RhythmArea({
       rafRef.current = null;
     }
 
-    startTimeRef.current = ctx.currentTime;
+    // Support resuming from paused elapsed time
+    const resumeFrom = pausedElapsed > 0 ? pausedElapsed : 0;
+    startTimeRef.current = ctx.currentTime - resumeFrom;
     finishedNaturallyRef.current = false;
-    // reset elapsed
-    setElapsed(0);
+    // start from resume position
+    setElapsed(resumeFrom);
     // determine beats per bar and beat value from timeSignature
     let beatsPerBar = 4;
     let beatValue = 1;
@@ -322,7 +326,17 @@ export default function RhythmArea({
     }
     // scale by 60/bpm so that at 60 BPM one beat = 1 s, at 80 BPM = 0.75 s, etc.
     const beatIntervalMs = beatValue * (60 / bpm) * 1000;
-    let beat = 0;
+    // Calculate which beat to start from based on resumeFrom
+    const { barStarts, barEnds } = timingMapRef.current;
+    let startBeat = 0;
+    if (resumeFrom > 0 && barStarts.length > 0) {
+      // Find which bar we're in
+      const barIndex = barStarts.findIndex((start, idx) => resumeFrom >= start && resumeFrom < barEnds[idx]);
+      if (barIndex >= 0) {
+        startBeat = barIndex * beatsPerBar;
+      }
+    }
+    let beat = startBeat;
     const totalBeats = beatsPerBar * barsData.length;
     const playBeat = () => {
       // stop once we've played the requested number of beats
@@ -346,7 +360,8 @@ export default function RhythmArea({
     intervalRef.current = setInterval(playBeat, beatIntervalMs);
     // start animation frame for elapsed
     function update() {
-      setElapsed(ctx.currentTime - startTimeRef.current);
+      const currentElapsed = ctx.currentTime - startTimeRef.current;
+      setElapsed(currentElapsed);
       rafRef.current = requestAnimationFrame(update);
     }
     rafRef.current = requestAnimationFrame(update);
@@ -530,7 +545,7 @@ export default function RhythmArea({
     if (barsData.length > 0 && running) {
       startMetronome();
     }
-  }, [barsData, running]);
+  }, [barsData, running, pausedElapsed]);
 
   // when running toggled off (pause), rewind progress but keep bars
   // only clear the history if the exercise was stopped before finishing;
@@ -545,9 +560,13 @@ export default function RhythmArea({
         setBarAccuracy([]);
         setMissingExpectedByBar([]);
       }
+      // Save the paused elapsed time for resuming later
+      if (onElapsedChange) {
+        onElapsedChange(elapsed);
+      }
       stopMetronome();
     }
-  }, [running, barsData, elapsed, totalDuration]);
+  }, [running, barsData, elapsed, totalDuration, onElapsedChange]);
 
   return (
     <main

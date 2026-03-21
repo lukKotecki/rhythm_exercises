@@ -46,6 +46,7 @@ function App() {
 
   const [barsData, setBarsData] = useState([]);
   const [running, setRunning] = useState(false);
+  const [pausedElapsed, setPausedElapsed] = useState(0);
   const [exerciseMode, setExerciseMode] = useState('normal');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -172,7 +173,17 @@ function App() {
   function handleStart() {
     if (running) return; // already active
     setExerciseMode('normal');
-    generateBars('normal');
+    // If no bars yet, generate them on first start
+    if (barsData.length === 0) {
+      generateBars('normal');
+    }
+    setPausedElapsed(0); // Reset pause state when starting
+    setRunning(true);
+  }
+
+  function handleResume() {
+    // Resume from paused state
+    if (running) return;
     setRunning(true);
   }
 
@@ -184,14 +195,24 @@ function App() {
   }
 
   function handlePause() {
-    // stop playback but keep generated rhythm
+    // Pause playback but keep generated rhythm and paused time
     setRunning(false);
   }
 
-  function handleReset() {
+  function handleStop() {
+    // Stop playback and reset everything
     setBarsData([]);
     setRunning(false);
+    setPausedElapsed(0);
     setExerciseMode('normal');
+  }
+
+  function handleReset() {
+    // Generate new rhythm (paused state, ready for Start)
+    setRunning(false);
+    setPausedElapsed(0);
+    setExerciseMode('normal');
+    generateBars('normal');
   }
 
   function handleCalibrationComplete(payload) {
@@ -210,6 +231,7 @@ function App() {
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
         onStart={handleStart}
+        onResume={handleResume}
         onPause={handlePause}
         onReset={handleReset}
         running={running}
@@ -238,6 +260,8 @@ function App() {
               bpm={options.bpm}
               exerciseMode={exerciseMode}
               running={running}
+              pausedElapsed={pausedElapsed}
+              onElapsedChange={setPausedElapsed}
               onPause={handlePause}
               onCalibrationComplete={handleCalibrationComplete}
             />

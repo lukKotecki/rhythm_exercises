@@ -6,6 +6,7 @@ export default function Header({
   sidebarOpen,
   onToggleSidebar,
   onStart,
+  onResume,
   onPause,
   onReset,
   running,
@@ -35,14 +36,14 @@ export default function Header({
       </div>
 
       <div className="header-controls">
-        <button className="start-button header-action" onClick={onStart} disabled={running}>
-          {running ? 'Running...' : 'Start'}
+        <button className="start-button header-action" onClick={onReset} disabled={running}>
+          Generate
         </button>
         <button className="start-button header-action" onClick={onPause} disabled={!running}>
-          Stop
+          Pause
         </button>
-        <button className="start-button header-action" onClick={onReset} disabled={running || !hasBars}>
-          Reset
+        <button className="start-button header-action" onClick={onStart} disabled={running}>
+          {running ? 'Running...' : 'Start'}
         </button>
       </div>
 
