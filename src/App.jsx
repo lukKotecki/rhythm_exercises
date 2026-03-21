@@ -16,6 +16,7 @@ function App() {
       noteValues: { whole: true, half: true, quarter: true, eighth: true, sixteenth: true },
       rests: { whole: false, half: false, quarter: false, eighth: false, sixteenth: false },
       legato: false,
+      legatoFrequency: 50,
       timeSignature: '4/4',
       articulation: 'legato',
       bars: 4,
@@ -262,6 +263,7 @@ function App() {
               tappedRhythmAccuracy={options.tappedRhythmAccuracy}
               userTapSyncPercent={options.tappedRhythmSyncPercent}
               legatoEnabled={options.legato}
+              legatoFrequency={options.legatoFrequency}
               repeatToken={repeatToken}
               showMovingProgressIndicator={options.showMovingProgressIndicator}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}

@@ -163,10 +163,15 @@ function findClosestSlot(expectedSet, targetSlot, predicate = null) {
   return { slot: bestSlot, distance: bestDistance };
 }
 
-function buildLegatoPlan(barsData, enabled) {
+function buildLegatoPlan(barsData, enabled, frequencyPercent = 50) {
   const ignoredNoteIdxByBar = barsData.map(() => new Set());
   const segmentsByBar = barsData.map(() => []);
   if (!enabled || !Array.isArray(barsData) || barsData.length === 0) {
+    return { ignoredNoteIdxByBar, segmentsByBar };
+  }
+
+  const clampedFrequency = Math.max(0, Math.min(100, frequencyPercent));
+  if (clampedFrequency <= 0) {
     return { ignoredNoteIdxByBar, segmentsByBar };
   }
 
@@ -200,7 +205,15 @@ function buildLegatoPlan(barsData, enabled) {
     }
   }
 
-  const selected = candidates.filter((_, idx) => (idx + 1) % 5 !== 0);
+  const selected = [];
+  let carry = 0;
+  candidates.forEach((pair) => {
+    carry += clampedFrequency;
+    if (carry >= 100) {
+      selected.push(pair);
+      carry -= 100;
+    }
+  });
 
   selected.forEach(({ first, second }) => {
     ignoredNoteIdxByBar[second.barIndex].add(second.noteIdx);
@@ -233,6 +246,7 @@ export default function RhythmArea({
   tappedRhythmAccuracy,
   userTapSyncPercent,
   legatoEnabled = false,
+  legatoFrequency = 50,
   repeatToken = 0,
   showMovingProgressIndicator = true,
   showExpectedRhythmGrid,
@@ -305,7 +319,7 @@ export default function RhythmArea({
     const expectedByBar = [];
     const ignoredByBar = [];
     const expectedTapTimes = [];
-    const { ignoredNoteIdxByBar, segmentsByBar } = buildLegatoPlan(barsData, legatoEnabled);
+    const { ignoredNoteIdxByBar, segmentsByBar } = buildLegatoPlan(barsData, legatoEnabled, legatoFrequency);
 
     barsData.forEach((bar, idx) => {
       barStarts.push(time);
@@ -348,7 +362,7 @@ export default function RhythmArea({
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
     calibrationSentRef.current = false;
-  }, [barsData, timeSignature, tappedRhythmAccuracy, bpm, legatoEnabled]);
+  }, [barsData, timeSignature, tappedRhythmAccuracy, bpm, legatoEnabled, legatoFrequency]);
 
   async function ensureAudioReady() {
     if (!audioCtx.current) {
@@ -469,6 +483,7 @@ export default function RhythmArea({
   }
 
   function handleTapInput() {
+    if (!running || !startTimeRef.current) return;
     const now = audioCtx.current
       ? audioCtx.current.currentTime - startTimeRef.current
       : Date.now() / 1000 - startTimeRef.current;
@@ -648,19 +663,10 @@ export default function RhythmArea({
     }
   }, [barsData, running, pausedElapsed, repeatToken]);
 
-  // when running toggled off (pause), rewind progress but keep bars
-  // only clear the history if the exercise was stopped before finishing;
-  // if we've reached the end of the rhythm the results should remain visible.
+  // when running toggled off (stop), keep user markers/results visible;
+  // they are cleared only by Start/Generate paths.
   useEffect(() => {
     if (!running && barsData.length > 0) {
-      // if we haven't yet played the whole duration, wipe the clicks/results
-      const completed = finishedNaturallyRef.current || elapsed >= totalDuration;
-      if (!completed) {
-        setTappedRhythm([]);
-        setTapAssessments([]);
-        setBarAccuracy([]);
-        setMissingExpectedByBar([]);
-      }
       // Save the paused elapsed time for resuming later
       if (onElapsedChange) {
         onElapsedChange(elapsed);

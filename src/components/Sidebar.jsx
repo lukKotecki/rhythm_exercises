@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 //   noteValues: { whole: true, half: true, ... },
 //   rests: { whole: true, half: true, ... },
 //   timeSignature: '4/4',
-//   articulation: 'legato',
 //   bars: 4,
 //   tappedRhythmSyncPercent: 10,
 //   showMovingProgressIndicator: true,
@@ -18,14 +17,12 @@ const DEFAULT_EXPANDED = {
   noteValues: false,
   pauseValues: false,
   barSettings: false,
-  articulation: false,
   metronome: false,
   tappedRhythm: false,
 };
 
 export default function Sidebar({ options, onChangeOptions, onGenerateSynchronizationRhythm, running, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
-  const articulations = ['legato', 'extension', 'staccato'];
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
   const metronomeSounds = [
     { value: 'sine', label: 'Sine' },
@@ -85,6 +82,13 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
       onChangeOptions({ ...options, bpm: bounded });
       return;
     }
+    if (field === 'legatoFrequency') {
+      const parsed = parseInt(value, 10);
+      const bounded = Number.isNaN(parsed) ? 50 : Math.max(0, Math.min(100, parsed));
+      const stepped = Math.round(bounded / 10) * 10;
+      onChangeOptions({ ...options, legatoFrequency: stepped });
+      return;
+    }
     onChangeOptions({ ...options, [field]: value });
   }
 
@@ -134,6 +138,29 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
             />
             legato
           </label>
+          <div className="field-group">
+            <label className="field-label">
+              Legato frequency: <strong>{options.legatoFrequency ?? 50}%</strong>
+            </label>
+            <div className="range-group">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="10"
+                value={options.legatoFrequency ?? 50}
+                onChange={(e) => changeField('legatoFrequency', e.target.value)}
+              />
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="10"
+                value={options.legatoFrequency ?? 50}
+                onChange={(e) => changeField('legatoFrequency', e.target.value)}
+              />
+            </div>
+          </div>
         </AccordionSection>
 
         <AccordionSection id="pauseValues" title="Pause values">
@@ -170,21 +197,6 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
               onChange={(e) => changeField('bars', parseInt(e.target.value, 10) || 1)}
             />
           </div>
-        </AccordionSection>
-
-        <AccordionSection id="articulation" title="Articulation">
-          {articulations.map((a) => (
-            <label key={a}>
-              <input
-                type="radio"
-                name="articulation"
-                value={a}
-                checked={options.articulation === a}
-                onChange={() => changeField('articulation', a)}
-              />
-              {a}
-            </label>
-          ))}
         </AccordionSection>
 
         <AccordionSection id="metronome" title="Metronome settings">
