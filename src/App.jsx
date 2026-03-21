@@ -48,6 +48,7 @@ function App() {
   const [barsData, setBarsData] = useState([]);
   const [running, setRunning] = useState(false);
   const [pausedElapsed, setPausedElapsed] = useState(0);
+  const [repeatToken, setRepeatToken] = useState(0);
   const [exerciseMode, setExerciseMode] = useState('normal');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -216,6 +217,18 @@ function App() {
     generateBars('normal');
   }
 
+  function handleRepeat() {
+    if (barsData.length === 0) return;
+    setRepeatToken((prev) => prev + 1);
+    setPausedElapsed(0);
+    // Always (re)start from the beginning on repeat.
+    setRunning(true);
+  }
+
+  function handleElapsedChange(nextElapsed) {
+    setPausedElapsed(nextElapsed);
+  }
+
   function handleCalibrationComplete(payload) {
     if (!payload || typeof payload.averageOffsetSec !== 'number') return;
     setExerciseMode('normal');
@@ -233,6 +246,7 @@ function App() {
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
         onStart={handleStart}
         onResume={handleResume}
+        onRepeat={handleRepeat}
         onPause={handlePause}
         onReset={handleReset}
         running={running}
@@ -255,7 +269,8 @@ function App() {
               timeSignature={exerciseMode === 'delay-calibration' ? '4/4' : options.timeSignature}
               tappedRhythmAccuracy={options.tappedRhythmAccuracy}
               userTapSyncPercent={options.tappedRhythmSyncPercent}
-                legatoEnabled={options.legato}
+              legatoEnabled={options.legato}
+              repeatToken={repeatToken}
               showMovingProgressIndicator={options.showMovingProgressIndicator}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
               metronomeSound={options.metronomeSound}
@@ -263,7 +278,7 @@ function App() {
               exerciseMode={exerciseMode}
               running={running}
               pausedElapsed={pausedElapsed}
-              onElapsedChange={setPausedElapsed}
+              onElapsedChange={handleElapsedChange}
               onPause={handlePause}
               onCalibrationComplete={handleCalibrationComplete}
             />

@@ -163,19 +163,68 @@ function findClosestSlot(expectedSet, targetSlot, predicate = null) {
   return { slot: bestSlot, distance: bestDistance };
 }
 
-function createLegatoPairMarks(bar, enabled) {
-  const marks = new Set();
-  if (!enabled || !Array.isArray(bar) || bar.length < 2) return marks;
+function buildLegatoPlan(barsData, enabled) {
+  const ignoredNoteIdxByBar = barsData.map(() => new Set());
+  const segmentsByBar = barsData.map(() => []);
+  if (!enabled || !Array.isArray(barsData) || barsData.length === 0) {
+    return { ignoredNoteIdxByBar, segmentsByBar };
+  }
 
-  for (let i = 0; i < bar.length - 1; i++) {
-    const first = bar[i];
-    const second = bar[i + 1];
-    if (first?.type === 'note' && second?.type === 'note') {
-      marks.add(i + 1); // second note in pair: this attack should be ignored
-      i += 1; // make pairs non-overlapping (1-2, 3-4, ...)
+  const barTotals = barsData.map((bar) => bar.reduce((sum, n) => sum + (n.duration || 0), 0));
+  const allItems = [];
+
+  barsData.forEach((bar, barIndex) => {
+    let start = 0;
+    bar.forEach((note, noteIdx) => {
+      allItems.push({
+        barIndex,
+        noteIdx,
+        note,
+        start,
+        duration: note.duration,
+        totalBarDuration: barTotals[barIndex] || 1,
+      });
+      start += note.duration;
+    });
+  });
+
+  const candidates = [];
+  for (let i = 0; i < allItems.length - 1;) {
+    const first = allItems[i];
+    const second = allItems[i + 1];
+    if (first.note?.type === 'note' && second.note?.type === 'note') {
+      candidates.push({ first, second });
+      i += 2;
+    } else {
+      i += 1;
     }
   }
-  return marks;
+
+  const selected = candidates.filter((_, idx) => (idx + 1) % 5 !== 0);
+
+  selected.forEach(({ first, second }) => {
+    ignoredNoteIdxByBar[second.barIndex].add(second.noteIdx);
+
+    const firstHeadPct = ((first.start + first.duration * 0.18) / first.totalBarDuration) * 100;
+    const secondHeadPct = ((second.start + second.duration * 0.18) / second.totalBarDuration) * 100;
+
+    if (first.barIndex === second.barIndex) {
+      segmentsByBar[first.barIndex].push({
+        fromPct: firstHeadPct,
+        toPct: secondHeadPct,
+      });
+      return;
+    }
+
+    const nextInCurrentScalePct = secondHeadPct * (second.totalBarDuration / first.totalBarDuration);
+    const boundaryGapPct = 1.2;
+    segmentsByBar[first.barIndex].push({
+      fromPct: firstHeadPct,
+      toPct: 100 + boundaryGapPct + nextInCurrentScalePct,
+    });
+  });
+
+  return { ignoredNoteIdxByBar, segmentsByBar };
 }
 
 export default function RhythmArea({
@@ -184,6 +233,7 @@ export default function RhythmArea({
   tappedRhythmAccuracy,
   userTapSyncPercent,
   legatoEnabled = false,
+  repeatToken = 0,
   showMovingProgressIndicator = true,
   showExpectedRhythmGrid,
   metronomeSound,
@@ -222,6 +272,7 @@ export default function RhythmArea({
   // per-bar expected slot Sets (index 0 = warmup, skipped during evaluation)
   const expectedByBarRef = useRef([]);
   const ignoredByBarRef = useRef([]);
+  const legatoSegmentsByBarRef = useRef([]);
   const expectedTapTimesRef = useRef([]);
   // timing lookup built when barsData changes
   const timingMapRef = useRef({ beatsPerBar: 4, beatDuration: 1, slotsPerBeat: 12, barStarts: [], barEnds: [] });
@@ -254,13 +305,14 @@ export default function RhythmArea({
     const expectedByBar = [];
     const ignoredByBar = [];
     const expectedTapTimes = [];
+    const { ignoredNoteIdxByBar, segmentsByBar } = buildLegatoPlan(barsData, legatoEnabled);
 
     barsData.forEach((bar, idx) => {
       barStarts.push(time);
       let offsetInBar = 0;
       const slots = new Set();
       const ignoredSlots = new Set();
-      const secondLegatoNoteIdx = createLegatoPairMarks(bar, legatoEnabled);
+      const secondLegatoNoteIdx = ignoredNoteIdxByBar[idx] || new Set();
       bar.forEach((note, noteIdx) => {
         const isSecondLegatoNote = secondLegatoNoteIdx.has(noteIdx);
         const slot = timeToSlot(offsetInBar, beatDuration, slotsPerBeat);
@@ -285,6 +337,7 @@ export default function RhythmArea({
 
     expectedByBarRef.current = expectedByBar;
     ignoredByBarRef.current = ignoredByBar;
+    legatoSegmentsByBarRef.current = segmentsByBar;
     expectedTapTimesRef.current = expectedTapTimes;
     timingMapRef.current = { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds };
     setTotalDuration(time);
@@ -574,13 +627,26 @@ export default function RhythmArea({
     return () => media.removeListener(handleChange);
   }, []);
 
+  useEffect(() => {
+    if (barsData.length === 0) return;
+    setTappedRhythm([]);
+    setTapAssessments([]);
+    setBarAccuracy([]);
+    setMissingExpectedByBar([]);
+    setElapsed(0);
+    setCurrentBeat(-1);
+    setCurrentBar(-1);
+    finishedNaturallyRef.current = false;
+    calibrationSentRef.current = false;
+  }, [repeatToken, barsData.length]);
+
   // start metronome when barsData is available
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (barsData.length > 0 && running) {
       startMetronome();
     }
-  }, [barsData, running, pausedElapsed]);
+  }, [barsData, running, pausedElapsed, repeatToken]);
 
   // when running toggled off (pause), rewind progress but keep bars
   // only clear the history if the exercise was stopped before finishing;
@@ -670,31 +736,7 @@ export default function RhythmArea({
               ? `${((j + 0.5) / beats) * 100}%`
               : `${(j * beatValue + beatValue / 2) * 3.3}cm`;
 
-            const notePositions = [];
-            let cursor = 0;
-            bar.forEach((note, noteIdx) => {
-              notePositions.push({
-                noteIdx,
-                note,
-                start: cursor,
-                end: cursor + note.duration,
-              });
-              cursor += note.duration;
-            });
-
-            const legatoPairs = [];
-            if (legatoEnabled && i > 0) {
-              for (let p = 0; p < notePositions.length - 1; p++) {
-                const first = notePositions[p];
-                const second = notePositions[p + 1];
-                if (first.note.type === 'note' && second.note.type === 'note') {
-                  const firstHead = first.start + first.note.duration * 0.18;
-                  const secondHead = second.start + second.note.duration * 0.18;
-                  legatoPairs.push({ from: firstHead, to: secondHead });
-                  p += 1;
-                }
-              }
-            }
+            const legatoPairs = legatoSegmentsByBarRef.current[i] || [];
 
             return (
               <div key={i} className={`bar-wrapper${i === 0 ? ' count-in-row' : ''}`}>
@@ -729,16 +771,14 @@ export default function RhythmArea({
                 {legatoEnabled && i > 0 && (
                   <div className="legato-lane" style={{ width: barWidthStr }}>
                     {legatoPairs.map((pair, pairIdx) => {
-                      const leftPct = (pair.from / totalBarDuration) * 100;
-                      const rightPct = (pair.to / totalBarDuration) * 100;
-                      const widthPct = Math.max(2.4, rightPct - leftPct);
+                      const widthPct = Math.max(2.4, pair.toPct - pair.fromPct);
                       return (
                         <svg
                           key={`legato-${i}-${pairIdx}`}
                           className="legato-arc"
                           viewBox="0 0 100 20"
                           preserveAspectRatio="none"
-                          style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                          style={{ left: `${pair.fromPct}%`, width: `${widthPct}%` }}
                         >
                           <path d="M 2 5 Q 50 18 98 5" />
                         </svg>
