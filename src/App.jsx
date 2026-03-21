@@ -173,13 +173,14 @@ function App() {
   }
 
   function handleStart() {
-    if (running) return; // already active
     setExerciseMode('normal');
-    // If no bars yet, generate them on first start
+    // If no bars yet, generate them on first start.
     if (barsData.length === 0) {
       generateBars('normal');
     }
-    setPausedElapsed(0); // Reset pause state when starting
+    // Start behaves like Repeat: always restart from the beginning.
+    setRepeatToken((prev) => prev + 1);
+    setPausedElapsed(0);
     setRunning(true);
   }
 
@@ -217,14 +218,6 @@ function App() {
     generateBars('normal');
   }
 
-  function handleRepeat() {
-    if (barsData.length === 0) return;
-    setRepeatToken((prev) => prev + 1);
-    setPausedElapsed(0);
-    // Always (re)start from the beginning on repeat.
-    setRunning(true);
-  }
-
   function handleElapsedChange(nextElapsed) {
     setPausedElapsed(nextElapsed);
   }
@@ -246,7 +239,6 @@ function App() {
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
         onStart={handleStart}
         onResume={handleResume}
-        onRepeat={handleRepeat}
         onPause={handlePause}
         onReset={handleReset}
         running={running}
