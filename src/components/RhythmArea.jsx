@@ -235,6 +235,11 @@ function buildLegatoPlan(barsData, enabled, frequencyPercent = 50) {
       fromPct: firstHeadPct,
       toPct: 100 + boundaryGapPct + nextInCurrentScalePct,
     });
+    segmentsByBar[second.barIndex].push({
+      fromPct: 0,
+      toPct: secondHeadPct,
+      continuationFromPrevBar: true,
+    });
   });
 
   return { ignoredNoteIdxByBar, segmentsByBar };
@@ -278,6 +283,9 @@ export default function RhythmArea({
   const finishedNaturallyRef = useRef(false);
   const [currentBeat, setCurrentBeat] = useState(-1);
   const [currentBar, setCurrentBar] = useState(-1);
+  const barsContainerRef = useRef(null);
+  const barWrapperRefs = useRef([]);
+  const barStartsNewLineRef = useRef([]);
   const [isSmallScreen, setIsSmallScreen] = useState(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return false;
     return window.matchMedia('(max-width: 767px)').matches;
@@ -643,6 +651,40 @@ export default function RhythmArea({
   }, []);
 
   useEffect(() => {
+    if (barsData.length === 0) {
+      barStartsNewLineRef.current = [];
+      return undefined;
+    }
+
+    const computeLineStarts = () => {
+      const refs = barWrapperRefs.current;
+      const starts = refs.map(() => false);
+      for (let i = 1; i < refs.length; i++) {
+        const prev = refs[i - 1];
+        const curr = refs[i];
+        if (!prev || !curr) continue;
+        if (curr.offsetTop > prev.offsetTop + 1) starts[i] = true;
+      }
+      barStartsNewLineRef.current = starts;
+    };
+
+    const rafId = requestAnimationFrame(computeLineStarts);
+    window.addEventListener('resize', computeLineStarts);
+
+    let observer;
+    if (typeof ResizeObserver !== 'undefined' && barsContainerRef.current) {
+      observer = new ResizeObserver(computeLineStarts);
+      observer.observe(barsContainerRef.current);
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', computeLineStarts);
+      if (observer) observer.disconnect();
+    };
+  }, [barsData, isSmallScreen]);
+
+  useEffect(() => {
     if (barsData.length === 0) return;
     setTappedRhythm([]);
     setTapAssessments([]);
@@ -685,7 +727,7 @@ export default function RhythmArea({
       {barsData.length === 0 ? (
         <p>Press "Start" to generate rhythm.</p>
       ) : (
-        <div className="bars">
+        <div className="bars" ref={barsContainerRef}>
           {(() => {
             // use the pre-computed timing map (already scaled by BPM) instead of
             // re-accumulating raw note durations which would be in quarter-note units
@@ -742,10 +784,19 @@ export default function RhythmArea({
               ? `${((j + 0.5) / beats) * 100}%`
               : `${(j * beatValue + beatValue / 2) * 3.3}cm`;
 
-            const legatoPairs = legatoSegmentsByBarRef.current[i] || [];
+            const isNewLineBar = !!barStartsNewLineRef.current[i];
+            const legatoPairs = (legatoSegmentsByBarRef.current[i] || []).filter(
+              (pair) => !pair.continuationFromPrevBar || isNewLineBar,
+            );
 
             return (
-              <div key={i} className={`bar-wrapper${i === 0 ? ' count-in-row' : ''}`}>
+              <div
+                key={i}
+                className={`bar-wrapper${i === 0 ? ' count-in-row' : ''}`}
+                ref={(el) => {
+                  barWrapperRefs.current[i] = el;
+                }}
+              >
                 <div className="bar" style={{ width: barWidthStr }}>
                   {/* beat-box visual containers */}
                   {Array.from({ length: beats }, (_, beatIdx) => {
