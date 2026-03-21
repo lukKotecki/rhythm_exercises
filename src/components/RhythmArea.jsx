@@ -163,11 +163,27 @@ function findClosestSlot(expectedSet, targetSlot, predicate = null) {
   return { slot: bestSlot, distance: bestDistance };
 }
 
+function createLegatoPairMarks(bar, enabled) {
+  const marks = new Set();
+  if (!enabled || !Array.isArray(bar) || bar.length < 2) return marks;
+
+  for (let i = 0; i < bar.length - 1; i++) {
+    const first = bar[i];
+    const second = bar[i + 1];
+    if (first?.type === 'note' && second?.type === 'note') {
+      marks.add(i + 1); // second note in pair: this attack should be ignored
+      i += 1; // make pairs non-overlapping (1-2, 3-4, ...)
+    }
+  }
+  return marks;
+}
+
 export default function RhythmArea({
   barsData,
   timeSignature,
   tappedRhythmAccuracy,
   userTapSyncPercent,
+  legatoEnabled = false,
   showMovingProgressIndicator = true,
   showExpectedRhythmGrid,
   metronomeSound,
@@ -205,6 +221,7 @@ export default function RhythmArea({
 
   // per-bar expected slot Sets (index 0 = warmup, skipped during evaluation)
   const expectedByBarRef = useRef([]);
+  const ignoredByBarRef = useRef([]);
   const expectedTapTimesRef = useRef([]);
   // timing lookup built when barsData changes
   const timingMapRef = useRef({ beatsPerBar: 4, beatDuration: 1, slotsPerBeat: 12, barStarts: [], barEnds: [] });
@@ -235,19 +252,27 @@ export default function RhythmArea({
     const barStarts = [];
     const barEnds = [];
     const expectedByBar = [];
+    const ignoredByBar = [];
     const expectedTapTimes = [];
 
     barsData.forEach((bar, idx) => {
       barStarts.push(time);
       let offsetInBar = 0;
       const slots = new Set();
-      bar.forEach((note) => {
+      const ignoredSlots = new Set();
+      const secondLegatoNoteIdx = createLegatoPairMarks(bar, legatoEnabled);
+      bar.forEach((note, noteIdx) => {
+        const isSecondLegatoNote = secondLegatoNoteIdx.has(noteIdx);
+        const slot = timeToSlot(offsetInBar, beatDuration, slotsPerBeat);
+        const maxSlot = beatsPerBar * slotsPerBeat;
+        const boundedSlot = Math.max(1, Math.min(maxSlot, slot));
         // only notes (not rests) in non-warmup bars generate expected tap slots
-        if (idx > 0 && note.type === 'note') {
+        if (idx > 0 && note.type === 'note' && !isSecondLegatoNote) {
           expectedTapTimes.push(time);
-          const slot = timeToSlot(offsetInBar, beatDuration, slotsPerBeat);
-          const maxSlot = beatsPerBar * slotsPerBeat;
-          slots.add(Math.max(1, Math.min(maxSlot, slot)));
+          slots.add(boundedSlot);
+        }
+        if (idx > 0 && note.type === 'note' && isSecondLegatoNote) {
+          ignoredSlots.add(boundedSlot);
         }
         const noteDurationSec = note.duration * (60 / bpm);
         offsetInBar += noteDurationSec;
@@ -255,9 +280,11 @@ export default function RhythmArea({
       });
       barEnds.push(time);
       expectedByBar.push(slots);
+      ignoredByBar.push(ignoredSlots);
     });
 
     expectedByBarRef.current = expectedByBar;
+    ignoredByBarRef.current = ignoredByBar;
     expectedTapTimesRef.current = expectedTapTimes;
     timingMapRef.current = { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds };
     setTotalDuration(time);
@@ -268,7 +295,7 @@ export default function RhythmArea({
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
     calibrationSentRef.current = false;
-  }, [barsData, timeSignature, tappedRhythmAccuracy, bpm]);
+  }, [barsData, timeSignature, tappedRhythmAccuracy, bpm, legatoEnabled]);
 
   async function ensureAudioReady() {
     if (!audioCtx.current) {
@@ -441,6 +468,14 @@ export default function RhythmArea({
       }
 
       const expected = expectedByBarRef.current[effectiveBarIndex] || new Set();
+      const ignored = ignoredByBarRef.current[effectiveBarIndex] || new Set();
+
+      const ignoredClosest = findClosestSlot(ignored, bounded);
+      if (ignoredClosest.slot !== null && ignoredClosest.distance <= goodDistanceSlots) {
+        assessments[ti] = { barIndex: effectiveBarIndex, slot: bounded, status: 'ignored', correct: true };
+        return;
+      }
+
       const unmatchedClosest = findClosestSlot(expected, bounded, (slotVal) => !matchedByBar[effectiveBarIndex].has(slotVal));
       const anyClosest = findClosestSlot(expected, bounded);
 
@@ -635,6 +670,32 @@ export default function RhythmArea({
               ? `${((j + 0.5) / beats) * 100}%`
               : `${(j * beatValue + beatValue / 2) * 3.3}cm`;
 
+            const notePositions = [];
+            let cursor = 0;
+            bar.forEach((note, noteIdx) => {
+              notePositions.push({
+                noteIdx,
+                note,
+                start: cursor,
+                end: cursor + note.duration,
+              });
+              cursor += note.duration;
+            });
+
+            const legatoPairs = [];
+            if (legatoEnabled && i > 0) {
+              for (let p = 0; p < notePositions.length - 1; p++) {
+                const first = notePositions[p];
+                const second = notePositions[p + 1];
+                if (first.note.type === 'note' && second.note.type === 'note') {
+                  const firstHead = first.start + first.note.duration * 0.18;
+                  const secondHead = second.start + second.note.duration * 0.18;
+                  legatoPairs.push({ from: firstHead, to: secondHead });
+                  p += 1;
+                }
+              }
+            }
+
             return (
               <div key={i} className={`bar-wrapper${i === 0 ? ' count-in-row' : ''}`}>
                 <div className="bar" style={{ width: barWidthStr }}>
@@ -665,6 +726,26 @@ export default function RhythmArea({
                     </span>
                   ))}
                 </div>
+                {legatoEnabled && i > 0 && (
+                  <div className="legato-lane" style={{ width: barWidthStr }}>
+                    {legatoPairs.map((pair, pairIdx) => {
+                      const leftPct = (pair.from / totalBarDuration) * 100;
+                      const rightPct = (pair.to / totalBarDuration) * 100;
+                      const widthPct = Math.max(2.4, rightPct - leftPct);
+                      return (
+                        <svg
+                          key={`legato-${i}-${pairIdx}`}
+                          className="legato-arc"
+                          viewBox="0 0 100 20"
+                          preserveAspectRatio="none"
+                          style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                        >
+                          <path d="M 2 5 Q 50 18 98 5" />
+                        </svg>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="count-bar" style={{ width: barWidthStr }}>
                   {Array.from({ length: beats }, (_, j) => (
                     <span
@@ -698,6 +779,7 @@ export default function RhythmArea({
                   {barTapped.map(({ t, ti }) => {
                     const pct = ((t - barStart) / barDuration) * 100;
                     const assessment = tapAssessments[ti];
+                    if (assessment?.status === 'ignored') return null;
                     let color = '#ef4444';
                     if (assessment?.status === 'good') color = '#22c55e';
                     else if (assessment?.status === 'near') color = '#9ca3af';

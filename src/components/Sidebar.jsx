@@ -126,6 +126,14 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
               {n}
             </label>
           ))}
+          <label>
+            <input
+              type="checkbox"
+              checked={options.legato ?? false}
+              onChange={(e) => changeField('legato', e.target.checked)}
+            />
+            legato
+          </label>
         </AccordionSection>
 
         <AccordionSection id="pauseValues" title="Pause values">

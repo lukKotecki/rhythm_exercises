@@ -15,6 +15,7 @@ function App() {
     const defaults = {
       noteValues: { whole: true, half: true, quarter: true, eighth: true, sixteenth: true },
       rests: { whole: false, half: false, quarter: false, eighth: false, sixteenth: false },
+      legato: false,
       timeSignature: '4/4',
       articulation: 'legato',
       bars: 4,
@@ -254,6 +255,7 @@ function App() {
               timeSignature={exerciseMode === 'delay-calibration' ? '4/4' : options.timeSignature}
               tappedRhythmAccuracy={options.tappedRhythmAccuracy}
               userTapSyncPercent={options.tappedRhythmSyncPercent}
+                legatoEnabled={options.legato}
               showMovingProgressIndicator={options.showMovingProgressIndicator}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
               metronomeSound={options.metronomeSound}

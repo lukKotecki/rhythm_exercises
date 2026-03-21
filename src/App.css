@@ -698,6 +698,28 @@
   flex-shrink: 0;
 }
 
+.legato-lane {
+  position: relative;
+  height: 14px;
+  margin-top: 0.05rem;
+  margin-bottom: 0.1rem;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.legato-arc {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+
+.legato-arc path {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.95);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
 .bar-progress-fill {
   position: absolute;
   top: 0;
@@ -891,6 +913,10 @@
 
   .bar-wrapper {
     width: 100%;
+  }
+
+  .legato-lane {
+    height: 12px;
   }
 
   .note {
