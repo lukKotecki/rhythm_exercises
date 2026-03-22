@@ -7,6 +7,7 @@ export default function Header({
   onToggleSidebar,
   onStart,
   onResume,
+  onNext,
   onPause,
   onReset,
   running,
@@ -39,8 +40,8 @@ export default function Header({
         <button className="start-button header-action" onClick={onReset}>
           Generate
         </button>
-        <button className="start-button header-action" onClick={onPause} disabled={!running}>
-          Stop
+        <button className="start-button header-action" onClick={running ? onPause : onNext}>
+          {running ? 'Stop' : 'Next'}
         </button>
         <button className="start-button header-action" onClick={onStart}>
           {running ? 'Repeat' : 'Start'}

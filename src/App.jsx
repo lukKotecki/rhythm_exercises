@@ -219,6 +219,15 @@ function App() {
     generateBars('normal');
   }
 
+  function handleNext() {
+    // Generate a new rhythm and start it immediately from the beginning.
+    setExerciseMode('normal');
+    setPausedElapsed(0);
+    setRepeatToken((prev) => prev + 1);
+    generateBars('normal');
+    setRunning(true);
+  }
+
   function handleElapsedChange(nextElapsed) {
     setPausedElapsed(nextElapsed);
   }
@@ -240,6 +249,7 @@ function App() {
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
         onStart={handleStart}
         onResume={handleResume}
+        onNext={handleNext}
         onPause={handlePause}
         onReset={handleReset}
         running={running}

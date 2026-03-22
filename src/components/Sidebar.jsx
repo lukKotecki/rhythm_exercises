@@ -23,6 +23,20 @@ const DEFAULT_EXPANDED = {
 
 export default function Sidebar({ options, onChangeOptions, onGenerateSynchronizationRhythm, running, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
+  const noteSymbols = {
+    whole: '𝅝',
+    half: '𝅗𝅥',
+    quarter: '𝅘𝅥',
+    eighth: '𝅘𝅥𝅮',
+    sixteenth: '𝅘𝅥𝅯',
+  };
+  const restSymbols = {
+    whole: '𝄻',
+    half: '𝄼',
+    quarter: '𝄽',
+    eighth: '𝄾',
+    sixteenth: '𝄿',
+  };
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
   const metronomeSounds = [
     { value: 'sine', label: 'Sine' },
@@ -127,6 +141,18 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
                 checked={options.noteValues[n]}
                 onChange={() => toggleNote(n, 'noteValues')}
               />
+              <span
+                style={{
+                  marginRight: '0.35rem',
+                  fontSize: '1.2rem',
+                  lineHeight: 1,
+                  display: 'inline-block',
+                  minWidth: '1.1rem',
+                  textAlign: 'center',
+                }}
+              >
+                {noteSymbols[n]}
+              </span>
               {n}
             </label>
           ))}
@@ -171,6 +197,18 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
                 checked={options.rests[n]}
                 onChange={() => toggleNote(n, 'rests')}
               />
+              <span
+                style={{
+                  marginRight: '0.35rem',
+                  fontSize: '1.2rem',
+                  lineHeight: 1,
+                  display: 'inline-block',
+                  minWidth: '1.1rem',
+                  textAlign: 'center',
+                }}
+              >
+                {restSymbols[n]}
+              </span>
               {n}
             </label>
           ))}
