@@ -273,6 +273,7 @@ export default function RhythmArea({
   const [barAccuracy, setBarAccuracy] = useState([]);
   // expected slots that were not hit exactly (used for blue markers)
   const [missingExpectedByBar, setMissingExpectedByBar] = useState([]);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const audioCtx = useRef(null);
   const mainRef = useRef(null);
@@ -283,6 +284,8 @@ export default function RhythmArea({
   const audioPrimedRef = useRef(false);
   const calibrationSentRef = useRef(false);
   const finishedNaturallyRef = useRef(false);
+  const rewardShownRef = useRef(false);
+  const confettiHideTimerRef = useRef(null);
   const [currentBeat, setCurrentBeat] = useState(-1);
   const [currentBar, setCurrentBar] = useState(-1);
   const barsContainerRef = useRef(null);
@@ -371,6 +374,8 @@ export default function RhythmArea({
     setTapAssessments([]);
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
+    setShowConfetti(false);
+    rewardShownRef.current = false;
     calibrationSentRef.current = false;
   }, [barsData, timeSignature, tappedRhythmAccuracy, bpm, legatoEnabled, legatoFrequency]);
 
@@ -692,12 +697,39 @@ export default function RhythmArea({
     setTapAssessments([]);
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
+    setShowConfetti(false);
     setElapsed(0);
     setCurrentBeat(-1);
     setCurrentBar(-1);
     finishedNaturallyRef.current = false;
+    rewardShownRef.current = false;
     calibrationSentRef.current = false;
   }, [repeatToken, barsData.length]);
+
+  useEffect(() => {
+    if (!finishedNaturallyRef.current || rewardShownRef.current) return;
+    if (barAccuracy.length === 0) return;
+    const isPerfectRun = barAccuracy.every((row) => row.accuracyPct === 100);
+    if (!isPerfectRun) return;
+
+    rewardShownRef.current = true;
+    setShowConfetti(true);
+    if (confettiHideTimerRef.current) {
+      clearTimeout(confettiHideTimerRef.current);
+    }
+    confettiHideTimerRef.current = setTimeout(() => {
+      setShowConfetti(false);
+      confettiHideTimerRef.current = null;
+    }, 2800);
+  }, [barAccuracy, running]);
+
+  useEffect(() => {
+    return () => {
+      if (confettiHideTimerRef.current) {
+        clearTimeout(confettiHideTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (focusMainToken <= 0) return;
@@ -927,6 +959,31 @@ export default function RhythmArea({
               &nbsp;({row.matched}/{row.expected})
             </div>
           ))}
+        </div>
+      )}
+      {showConfetti && (
+        <div className="confetti-overlay" aria-hidden="true">
+          {Array.from({ length: 42 }, (_, idx) => {
+            const leftPct = ((idx * 17) % 100) + (idx % 3) * 0.15;
+            const delaySec = ((idx * 7) % 10) / 20;
+            const durationSec = 2.1 + ((idx * 13) % 9) / 10;
+            const swaySec = 1.2 + ((idx * 5) % 7) / 10;
+            const hue = (idx * 37) % 360;
+            const rotate = ((idx * 29) % 80) - 40;
+            return (
+              <span
+                key={`confetti-${idx}`}
+                className="confetti-piece"
+                style={{
+                  left: `${leftPct}%`,
+                  animationDelay: `${delaySec}s`,
+                  animationDuration: `${durationSec}s, ${swaySec}s`,
+                  backgroundColor: `hsl(${hue} 90% 58%)`,
+                  transform: `rotate(${rotate}deg)`,
+                }}
+              />
+            );
+          })}
         </div>
       )}
 
