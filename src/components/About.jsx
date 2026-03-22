@@ -1,13 +1,8 @@
-export default function About() {
+export default function About({ t }) {
   return (
     <div className="page about">
-      <h2>About the project</h2>
-      <p>
-        This rhythm exercise web app is a simple tool to help musicians practice
-        reading and performing rhythms. It was built with React and Vite and
-        generates random bars according to selected parameters. It includes a
-        basic metronome and a click-based rhythm accuracy check.
-      </p>
+      <h2>{t.pages.aboutTitle}</h2>
+      <p>{t.pages.aboutBody}</p>
     </div>
   );
 }

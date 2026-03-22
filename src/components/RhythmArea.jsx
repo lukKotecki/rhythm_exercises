@@ -271,6 +271,7 @@ function calculateOverallTimingAccuracy(expectedTapTimes, userTapTimes, beatDura
 }
 
 export default function RhythmArea({
+  t,
   barsData,
   timeSignature,
   tappedRhythmAccuracy,
@@ -818,7 +819,7 @@ export default function RhythmArea({
       onKeyDown={handleKey}
     >
       {barsData.length === 0 ? (
-        <p>Press "Start" to generate rhythm.</p>
+        <p>{t.rhythm.emptyState}</p>
       ) : (
         <div className="bars" ref={barsContainerRef}>
           {(() => {
@@ -1000,8 +1001,11 @@ export default function RhythmArea({
               key={row.barIndex}
               className={`bar-accuracy ${row.accuracyPct >= 80 ? 'good' : 'bad'}`}
             >
-              Bar {row.barIndex}: tapped rhythm {row.accuracyPct}%
-              &nbsp;({row.matched}/{row.expected})
+              {t.rhythm.barLine
+                .replace('{index}', row.barIndex)
+                .replace('{pct}', row.accuracyPct)
+                .replace('{matched}', row.matched)
+                .replace('{expected}', row.expected)}
             </div>
           ))}
         </div>
@@ -1033,7 +1037,7 @@ export default function RhythmArea({
       )}
       {overallAccuracyPct !== null && !running && elapsed >= totalDuration && (
         <div className="overall-accuracy-summary" role="status" aria-live="polite">
-          Average accuracy: <strong>{overallAccuracyPct}%</strong>
+          {t.rhythm.averageAccuracy}: <strong>{overallAccuracyPct}%</strong>
         </div>
       )}
 

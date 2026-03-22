@@ -5,10 +5,21 @@ import RhythmArea from './components/RhythmArea.jsx';
 import Instructions from './components/Instructions.jsx';
 import About from './components/About.jsx';
 import Settings from './components/Settings.jsx';
+import { LANGUAGE_STORAGE_KEY, TRANSLATIONS } from './i18n.js';
 import './App.css';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('Home');
+  const [currentPage, setCurrentPage] = useState('home');
+  const [language, setLanguage] = useState(() => {
+    try {
+      const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      if (saved && TRANSLATIONS[saved]) return saved;
+    } catch {
+      // ignore localStorage access issues
+    }
+    return 'pl';
+  });
+  const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
   // options state – loaded from localStorage, falls back to defaults
   const [options, setOptions] = useState(() => {
@@ -45,6 +56,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('rhythmExercisesOptions', JSON.stringify(options));
   }, [options]);
+
+  useEffect(() => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  }, [language]);
 
   const [barsData, setBarsData] = useState([]);
   const [running, setRunning] = useState(false);
@@ -244,6 +259,9 @@ function App() {
   return (
     <div className="app-container">
       <Header
+        t={t}
+        language={language}
+        onChangeLanguage={setLanguage}
         currentPage={currentPage}
         onChangePage={(page) => {
           setCurrentPage(page);
@@ -262,6 +280,7 @@ function App() {
       <div className="content-wrap">
         {sidebarOpen && (
           <Sidebar
+            t={t}
             options={options}
             onChangeOptions={setOptions}
             onGenerateSynchronizationRhythm={handleDelayCalibration}
@@ -270,8 +289,9 @@ function App() {
           />
         )}
         <div className="main-area">
-          {currentPage === 'Home' && (
+          {currentPage === 'home' && (
             <RhythmArea
+              t={t}
               barsData={barsData}
               timeSignature={exerciseMode === 'delay-calibration' ? '4/4' : options.timeSignature}
               tappedRhythmAccuracy={options.tappedRhythmAccuracy}
@@ -292,9 +312,9 @@ function App() {
               onCalibrationComplete={handleCalibrationComplete}
             />
           )}
-          {currentPage === 'Instructions' && <Instructions />}
-          {currentPage === 'About' && <About />}
-          {currentPage === 'Settings' && <Settings options={options} />}
+          {currentPage === 'instructions' && <Instructions t={t} />}
+          {currentPage === 'about' && <About t={t} />}
+          {currentPage === 'settings' && <Settings t={t} options={options} />}
         </div>
       </div>
     </div>

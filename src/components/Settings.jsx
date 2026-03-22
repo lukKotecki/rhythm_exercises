@@ -1,11 +1,10 @@
-export default function Settings({ options }) {
+export default function Settings({ t, options }) {
   return (
     <div className="page settings">
-      <h2>Settings</h2>
-      <p>Current configuration:</p>
+      <h2>{t.pages.settingsTitle}</h2>
+      <p>{t.pages.settingsCurrentConfiguration}</p>
       <pre>{JSON.stringify(options, null, 2)}</pre>
-      <p>The panel on the left can be used to change these parameters and start
-        a new exercise.</p>
+      <p>{t.pages.settingsHint}</p>
     </div>
   );
 }

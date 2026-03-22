@@ -21,7 +21,7 @@ const DEFAULT_EXPANDED = {
   tappedRhythm: false,
 };
 
-export default function Sidebar({ options, onChangeOptions, onGenerateSynchronizationRhythm, running, open }) {
+export default function Sidebar({ t, options, onChangeOptions, onGenerateSynchronizationRhythm, running, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
   const noteSymbols = {
     whole: '𝅝',
@@ -146,7 +146,7 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
     >
       <div className="sidebar-inner">
 
-        <AccordionSection id="noteValues" title="Note values">
+        <AccordionSection id="noteValues" title={t.sidebar.sections.noteValues}>
           {noteNames.map((n) => (
             <label key={n}>
               <input
@@ -166,7 +166,7 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
               >
                 {noteSymbols[n]}
               </span>
-              {n}
+              {t.sidebar.noteNames[n]}
             </label>
           ))}
           <label>
@@ -175,11 +175,11 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
               checked={options.legato ?? false}
               onChange={(e) => changeField('legato', e.target.checked)}
             />
-            legato
+            {t.sidebar.fields.legato}
           </label>
           <div className="field-group">
             <label className="field-label">
-              Legato frequency: <strong>{options.legatoFrequency ?? 50}%</strong>
+              {t.sidebar.fields.legatoFrequency}: <strong>{options.legatoFrequency ?? 50}%</strong>
             </label>
             <div className="range-group">
               <input
@@ -202,7 +202,7 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
           </div>
         </AccordionSection>
 
-        <AccordionSection id="pauseValues" title="Pause values">
+        <AccordionSection id="pauseValues" title={t.sidebar.sections.restValues}>
           {noteNames.map((n) => (
             <label key={n}>
               <input
@@ -222,14 +222,14 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
               >
                 {restSymbols[n]}
               </span>
-              {n}
+              {t.sidebar.restNames[n]}
             </label>
           ))}
         </AccordionSection>
 
-        <AccordionSection id="barSettings" title="Bar settings">
+        <AccordionSection id="barSettings" title={t.sidebar.sections.barSettings}>
           <div className="field-group">
-            <label className="field-label">Time signature</label>
+            <label className="field-label">{t.sidebar.fields.timeSignature}</label>
             <select
               value={options.timeSignature}
               onChange={(e) => changeField('timeSignature', e.target.value)}
@@ -240,7 +240,7 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
             </select>
           </div>
           <div className="field-group">
-            <label className="field-label">Number of bars</label>
+            <label className="field-label">{t.sidebar.fields.numberOfBars}</label>
             <input
               type="number"
               min="1"
@@ -250,10 +250,10 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
           </div>
         </AccordionSection>
 
-        <AccordionSection id="metronome" title="Metronome settings">
+        <AccordionSection id="metronome" title={t.sidebar.sections.metronome}>
           <div className="field-group">
             <label className="field-label">
-              Tempo: <strong>{options.bpm ?? 60} BPM</strong>
+              {t.sidebar.fields.tempo}: <strong>{options.bpm ?? 60} BPM</strong>
             </label>
             <div className="range-group">
               <input
@@ -281,12 +281,12 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
                 checked={options.showMovingProgressIndicator ?? true}
                 onChange={(e) => changeField('showMovingProgressIndicator', e.target.checked)}
               />
-              Show moving progress indicator
+              {t.sidebar.fields.movingProgress}
             </label>
           </div>
 
           <div className="field-group">
-            <label className="field-label">Sound</label>
+            <label className="field-label">{t.sidebar.fields.sound}</label>
             <select
               value={options.metronomeSound.waveform}
               onChange={(e) => changeSoundField('waveform', e.target.value)}
@@ -299,7 +299,7 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
 
           <div className="field-group">
             <label className="field-label">
-              Accent freq: <strong>{options.metronomeSound.accentFreq} Hz</strong>
+              {t.sidebar.fields.accentFreq}: <strong>{options.metronomeSound.accentFreq} Hz</strong>
             </label>
             <div className="range-group">
               <input
@@ -322,7 +322,7 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
 
           <div className="field-group">
             <label className="field-label">
-              Beat freq: <strong>{options.metronomeSound.beatFreq} Hz</strong>
+              {t.sidebar.fields.beatFreq}: <strong>{options.metronomeSound.beatFreq} Hz</strong>
             </label>
             <div className="range-group">
               <input
@@ -344,20 +344,20 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
           </div>
         </AccordionSection>
 
-        <AccordionSection id="tappedRhythm" title="Synchronization">
+        <AccordionSection id="tappedRhythm" title={t.sidebar.sections.synchronization}>
           <div className="field-group">
             <button
               className="start-button"
               onClick={onGenerateSynchronizationRhythm}
               disabled={running}
             >
-              Generate synchronization rhythm
+              {t.sidebar.actions.generateSyncRhythm}
             </button>
           </div>
 
           <div className="field-group">
             <label className="field-label">
-              Accuracy grid: <strong>{options.tappedRhythmAccuracy ?? 12}</strong>
+              {t.sidebar.fields.accuracyGrid}: <strong>{options.tappedRhythmAccuracy ?? 12}</strong>
             </label>
             <div className="range-group">
               <input
@@ -381,7 +381,7 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
 
           <div className="field-group">
             <label className="field-label">
-              User tap sync: <strong>{options.tappedRhythmSyncPercent ?? 0}%</strong>
+              {t.sidebar.fields.userTapSync}: <strong>{options.tappedRhythmSyncPercent ?? 0}%</strong>
             </label>
             <div className="range-group">
               <input
@@ -410,7 +410,7 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
                 checked={options.showExpectedRhythmGrid ?? true}
                 onChange={(e) => changeField('showExpectedRhythmGrid', e.target.checked)}
               />
-              Show expected rhythm grid on progress bar
+              {t.sidebar.fields.expectedGrid}
             </label>
           </div>
         </AccordionSection>
