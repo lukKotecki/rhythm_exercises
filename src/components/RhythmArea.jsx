@@ -1033,10 +1033,7 @@ export default function RhythmArea({
       )}
       {overallAccuracyPct !== null && !running && elapsed >= totalDuration && (
         <div className="overall-accuracy-summary" role="status" aria-live="polite">
-          Srednia dokladnosc calego cwiczenia: <strong>{overallAccuracyPct}%</strong>
-          <span className="overall-accuracy-note">
-            Wynik bazuje glownie na odleglosci czasowej Twoich klikniec od oczekiwanych uderzen.
-          </span>
+          Average accuracy: <strong>{overallAccuracyPct}%</strong>
         </div>
       )}
 
