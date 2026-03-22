@@ -245,6 +245,31 @@ function buildLegatoPlan(barsData, enabled, frequencyPercent = 50) {
   return { ignoredNoteIdxByBar, segmentsByBar };
 }
 
+function calculateOverallTimingAccuracy(expectedTapTimes, userTapTimes, beatDurationSec) {
+  if (!Array.isArray(expectedTapTimes) || expectedTapTimes.length === 0) return null;
+
+  const expected = [...expectedTapTimes].sort((a, b) => a - b);
+  const user = [...(userTapTimes || [])].sort((a, b) => a - b);
+  const pairCount = Math.min(expected.length, user.length);
+  const toleranceSec = Math.max(0.05, (beatDurationSec || 1) * 0.35);
+
+  let distanceScore = 0;
+  for (let i = 0; i < pairCount; i++) {
+    const distance = Math.abs(user[i] - expected[i]);
+    const normalized = Math.max(0, 1 - distance / toleranceSec);
+    distanceScore += normalized;
+  }
+  const distanceAvg = pairCount > 0 ? distanceScore / pairCount : 0;
+
+  const coverageScore = pairCount / expected.length;
+  const extraTaps = Math.max(0, user.length - expected.length);
+  const extraPenaltyScore = Math.max(0, 1 - extraTaps / expected.length);
+
+  const combinedScore = distanceAvg * 0.75 + coverageScore * 0.2 + extraPenaltyScore * 0.05;
+  const pct = Math.round(Math.max(0, Math.min(1, combinedScore)) * 100);
+  return pct;
+}
+
 export default function RhythmArea({
   barsData,
   timeSignature,
@@ -273,6 +298,7 @@ export default function RhythmArea({
   const [barAccuracy, setBarAccuracy] = useState([]);
   // expected slots that were not hit exactly (used for blue markers)
   const [missingExpectedByBar, setMissingExpectedByBar] = useState([]);
+  const [overallAccuracyPct, setOverallAccuracyPct] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const audioCtx = useRef(null);
@@ -374,6 +400,7 @@ export default function RhythmArea({
     setTapAssessments([]);
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
+    setOverallAccuracyPct(null);
     setShowConfetti(false);
     rewardShownRef.current = false;
     calibrationSentRef.current = false;
@@ -697,6 +724,7 @@ export default function RhythmArea({
     setTapAssessments([]);
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
+    setOverallAccuracyPct(null);
     setShowConfetti(false);
     setElapsed(0);
     setCurrentBeat(-1);
@@ -705,6 +733,23 @@ export default function RhythmArea({
     rewardShownRef.current = false;
     calibrationSentRef.current = false;
   }, [repeatToken, barsData.length]);
+
+  useEffect(() => {
+    if (!finishedNaturallyRef.current || running) return;
+    if (elapsed < totalDuration || totalDuration <= 0) return;
+
+    const expected = expectedTapTimesRef.current;
+    if (!expected.length) {
+      setOverallAccuracyPct(null);
+      return;
+    }
+
+    const beatDuration = timingMapRef.current.beatDuration || 1;
+    const userTapSyncDelaySec = beatDuration * ((userTapSyncPercent ?? 10) / 100);
+    const adjustedTaps = tappedRhythm.map((tap) => tap + userTapSyncDelaySec);
+    const overallPct = calculateOverallTimingAccuracy(expected, adjustedTaps, beatDuration);
+    setOverallAccuracyPct(overallPct);
+  }, [elapsed, totalDuration, running, tappedRhythm, userTapSyncPercent]);
 
   useEffect(() => {
     if (!finishedNaturallyRef.current || rewardShownRef.current) return;
@@ -984,6 +1029,14 @@ export default function RhythmArea({
               />
             );
           })}
+        </div>
+      )}
+      {overallAccuracyPct !== null && !running && elapsed >= totalDuration && (
+        <div className="overall-accuracy-summary" role="status" aria-live="polite">
+          Srednia dokladnosc calego cwiczenia: <strong>{overallAccuracyPct}%</strong>
+          <span className="overall-accuracy-note">
+            Wynik bazuje glownie na odleglosci czasowej Twoich klikniec od oczekiwanych uderzen.
+          </span>
         </div>
       )}
 
