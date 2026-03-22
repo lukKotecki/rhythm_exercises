@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 
 // options shape: {
 //   noteValues: { whole: true, half: true, ... },
@@ -57,10 +57,17 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
       return DEFAULT_EXPANDED;
     }
   });
+  const sidebarRef = useRef(null);
+  const scrollTopRef = useRef(0);
 
   useEffect(() => {
     localStorage.setItem(EXPANDED_KEY, JSON.stringify(expanded));
   }, [expanded]);
+
+  useLayoutEffect(() => {
+    if (!sidebarRef.current) return;
+    sidebarRef.current.scrollTop = scrollTopRef.current;
+  }, [options]);
 
   function toggleSection(key) {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -130,7 +137,13 @@ export default function Sidebar({ options, onChangeOptions, onGenerateSynchroniz
   }
 
   return (
-    <aside className={`sidebar${open ? ' open' : ''}`}>
+    <aside
+      ref={sidebarRef}
+      className={`sidebar${open ? ' open' : ''}`}
+      onScroll={(e) => {
+        scrollTopRef.current = e.currentTarget.scrollTop;
+      }}
+    >
       <div className="sidebar-inner">
 
         <AccordionSection id="noteValues" title="Note values">

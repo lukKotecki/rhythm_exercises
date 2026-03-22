@@ -50,6 +50,7 @@ function App() {
   const [running, setRunning] = useState(false);
   const [pausedElapsed, setPausedElapsed] = useState(0);
   const [repeatToken, setRepeatToken] = useState(0);
+  const [focusMainToken, setFocusMainToken] = useState(0);
   const [exerciseMode, setExerciseMode] = useState('normal');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -174,6 +175,7 @@ function App() {
   }
 
   function handleStart() {
+    setFocusMainToken((prev) => prev + 1);
     setExerciseMode('normal');
     // If no bars yet, generate them on first start.
     if (barsData.length === 0) {
@@ -212,6 +214,7 @@ function App() {
   }
 
   function handleReset() {
+    setFocusMainToken((prev) => prev + 1);
     // Generate new rhythm (paused state, ready for Start)
     setRunning(false);
     setPausedElapsed(0);
@@ -220,6 +223,7 @@ function App() {
   }
 
   function handleNext() {
+    setFocusMainToken((prev) => prev + 1);
     // Generate a new rhythm and start it immediately from the beginning.
     setExerciseMode('normal');
     setPausedElapsed(0);
@@ -275,6 +279,7 @@ function App() {
               legatoEnabled={options.legato}
               legatoFrequency={options.legatoFrequency}
               repeatToken={repeatToken}
+              focusMainToken={focusMainToken}
               showMovingProgressIndicator={options.showMovingProgressIndicator}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
               metronomeSound={options.metronomeSound}

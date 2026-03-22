@@ -253,6 +253,7 @@ export default function RhythmArea({
   legatoEnabled = false,
   legatoFrequency = 50,
   repeatToken = 0,
+  focusMainToken = 0,
   showMovingProgressIndicator = true,
   showExpectedRhythmGrid,
   metronomeSound,
@@ -274,6 +275,7 @@ export default function RhythmArea({
   const [missingExpectedByBar, setMissingExpectedByBar] = useState([]);
   const [elapsed, setElapsed] = useState(0);
   const audioCtx = useRef(null);
+  const mainRef = useRef(null);
   const intervalRef = useRef(null);
   const startTimeRef = useRef(null);
   const rafRef = useRef(null);
@@ -697,6 +699,19 @@ export default function RhythmArea({
     calibrationSentRef.current = false;
   }, [repeatToken, barsData.length]);
 
+  useEffect(() => {
+    if (focusMainToken <= 0) return;
+    const node = mainRef.current;
+    if (!node) return;
+    if (typeof node.focus === 'function') {
+      try {
+        node.focus({ preventScroll: true });
+      } catch {
+        node.focus();
+      }
+    }
+  }, [focusMainToken]);
+
   // start metronome when barsData is available
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -719,6 +734,7 @@ export default function RhythmArea({
 
   return (
     <main
+      ref={mainRef}
       className="rhythm-area"
       onClick={handleTapInput}
       tabIndex={0}
