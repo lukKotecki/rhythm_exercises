@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import NoteRenderer from './NoteRenderer.jsx';
 
 // Convert absolute time t (seconds since start) to 1-based slot number within a bar.
 // beatDuration: duration of one metronome beat (= beatValue at 60 BPM)
@@ -969,7 +970,7 @@ export default function RhythmArea({
                       className={`note ${note.type}${note.accent ? ' accent' : ''}`}
                       style={{ width: getNoteWidth(note.duration), flex: '0 0 auto' }}
                     >
-                      {note.symbol || note.value}
+                      <NoteRenderer type={note.type} name={note.name} />
                     </span>
                   ))}
                 </div>

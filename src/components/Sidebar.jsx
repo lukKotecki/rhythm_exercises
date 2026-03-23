@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import NoteRenderer from './NoteRenderer.jsx';
 
 // options shape: {
 //   noteValues: { whole: true, half: true, ... },
@@ -23,20 +24,6 @@ const DEFAULT_EXPANDED = {
 
 export default function Sidebar({ t, options, onChangeOptions, running, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
-  const noteSymbols = {
-    whole: '𝅝',
-    half: '𝅗𝅥',
-    quarter: '𝅘𝅥',
-    eighth: '𝅘𝅥𝅮',
-    sixteenth: '𝅘𝅥𝅯',
-  };
-  const restSymbols = {
-    whole: '𝄻',
-    half: '𝄼',
-    quarter: '𝄽',
-    eighth: '𝄾',
-    sixteenth: '𝄿',
-  };
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
   const metronomeSounds = [
     { value: 'sine', label: 'Sine' },
@@ -155,16 +142,9 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
                 onChange={() => toggleNote(n, 'noteValues')}
               />
               <span
-                style={{
-                  marginRight: '0.35rem',
-                  fontSize: '1.2rem',
-                  lineHeight: 1,
-                  display: 'inline-block',
-                  minWidth: '1.1rem',
-                  textAlign: 'center',
-                }}
+                className="sidebar-note-preview"
               >
-                {noteSymbols[n]}
+                <NoteRenderer type="note" name={n} size={18} />
               </span>
               {t.sidebar.noteNames[n]}
             </label>
@@ -211,16 +191,9 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
                 onChange={() => toggleNote(n, 'rests')}
               />
               <span
-                style={{
-                  marginRight: '0.35rem',
-                  fontSize: '1.2rem',
-                  lineHeight: 1,
-                  display: 'inline-block',
-                  minWidth: '1.1rem',
-                  textAlign: 'center',
-                }}
+                className="sidebar-note-preview"
               >
-                {restSymbols[n]}
+                <NoteRenderer type="rest" name={n} size={18} />
               </span>
               {t.sidebar.restNames[n]}
             </label>

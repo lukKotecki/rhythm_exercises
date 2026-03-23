@@ -81,7 +81,6 @@ function App() {
           name: 'quarter',
           duration: beatValue,
           value: '',
-          symbol: mapSymbol({ type: 'rest', name: 'quarter' }),
           accent: beat === 0,
         });
       }
@@ -94,7 +93,6 @@ function App() {
             name: 'quarter',
             duration: 1,
             value: 'quarter',
-            symbol: mapSymbol({ type: 'note', name: 'quarter' }),
             accent: beat === 0,
           });
         }
@@ -165,7 +163,6 @@ function App() {
         const noteObj = {
           ...choice,
           value: choice.name,
-          symbol: mapSymbol(choice),
           accent: bar.length === 0, // accent first note in the bar
         };
         bar.push(noteObj);
@@ -183,7 +180,6 @@ function App() {
         name: 'quarter',
         duration: beatValue,
         value: '',
-        symbol: mapSymbol({ type: 'rest', name: 'quarter' }),
         accent: beat === 0,
       });
     }
@@ -317,7 +313,6 @@ function App() {
   );
 }
 
-// helper mapping for unicode symbols
 const durationMap = {
   whole: 4,
   half: 2,
@@ -325,24 +320,5 @@ const durationMap = {
   eighth: 0.5,
   sixteenth: 0.25,
 };
-
-function mapSymbol(choice) {
-  const symbols = {
-    whole: '𝅝',
-    half: '𝅗𝅥',
-    quarter: '𝅘𝅥',
-    eighth: '𝅘𝅥𝅮',
-    sixteenth: '𝅘𝅥𝅯',
-  };
-  const restSymbols = {
-    whole: '𝄻',
-    half: '𝄼',
-    quarter: '𝄽',
-    eighth: '𝄾',
-    sixteenth: '𝄿',
-  };
-  if (choice.type === 'rest') return restSymbols[choice.name] || restSymbols.quarter;
-  return symbols[choice.name] || symbols.quarter;
-}
 
 export default App;
