@@ -562,7 +562,7 @@ export default function RhythmArea({
   }
 
   function handleTapInput() {
-    if (!running || !startTimeRef.current) return;
+    if (!running || startTimeRef.current == null) return;
     const now = audioCtx.current
       ? audioCtx.current.currentTime - startTimeRef.current
       : Date.now() / 1000 - startTimeRef.current;
@@ -587,7 +587,7 @@ export default function RhythmArea({
       // Use the same timeline as visible click markers on the progress bar.
       const displayTapTime = tapTime + userTapSyncDelaySec;
       const barIndex = barStarts.findIndex((start, idx) => displayTapTime >= start && displayTapTime < barEnds[idx]);
-      if (barIndex <= 0) { // warmup bar or before start: ignore
+      if (barIndex < 0) {
         assessments[ti] = { barIndex, slot: null, status: 'bad', correct: false };
         return;
       }
@@ -612,6 +612,11 @@ export default function RhythmArea({
           effectiveBarIndex = nextBarIndex;
           bounded = 1;
         }
+      }
+
+      if (effectiveBarIndex <= 0) {
+        assessments[ti] = { barIndex: effectiveBarIndex, slot: null, status: 'bad', correct: false };
+        return;
       }
 
       const expected = expectedByBarRef.current[effectiveBarIndex] || new Set();
@@ -781,10 +786,23 @@ export default function RhythmArea({
       return;
     }
 
-    const beatDuration = timingMapRef.current.beatDuration || 1;
+    const { beatDuration, barEnds, slotsPerBeat } = timingMapRef.current;
+    const effectiveBeatDuration = beatDuration || 1;
     const userTapSyncDelaySec = beatDuration * ((userTapSyncPercent ?? 10) / 100);
-    const adjustedTaps = tappedRhythm.map((tap) => tap + userTapSyncDelaySec);
-    const overallPct = calculateOverallTimingAccuracy(expected, adjustedTaps, beatDuration);
+    const warmupEndTime = barEnds[0] ?? 0;
+    const slotDurationSec = effectiveBeatDuration / (slotsPerBeat || 12);
+    const boundaryToleranceSec = slotDurationSec;
+    const firstExpectedAtBarStart = expected[0] !== undefined && Math.abs(expected[0] - warmupEndTime) <= 0.001;
+    const adjustedTaps = tappedRhythm
+      .map((tap) => tap + userTapSyncDelaySec)
+      .filter((tap) => tap >= warmupEndTime || (firstExpectedAtBarStart && tap >= warmupEndTime - boundaryToleranceSec));
+
+    if (adjustedTaps.length === 0) {
+      setOverallAccuracyPct(0);
+      return;
+    }
+
+    const overallPct = calculateOverallTimingAccuracy(expected, adjustedTaps, effectiveBeatDuration);
     setOverallAccuracyPct(overallPct);
   }, [elapsed, totalDuration, running, tappedRhythm, userTapSyncPercent]);
 
