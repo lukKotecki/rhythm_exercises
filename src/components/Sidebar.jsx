@@ -21,7 +21,7 @@ const DEFAULT_EXPANDED = {
   tappedRhythm: false,
 };
 
-export default function Sidebar({ t, options, onChangeOptions, onGenerateSynchronizationRhythm, running, open }) {
+export default function Sidebar({ t, options, onChangeOptions, running, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
   const noteSymbols = {
     whole: '𝅝',
@@ -346,13 +346,14 @@ export default function Sidebar({ t, options, onChangeOptions, onGenerateSynchro
 
         <AccordionSection id="tappedRhythm" title={t.sidebar.sections.synchronization}>
           <div className="field-group">
-            <button
-              className="start-button"
-              onClick={onGenerateSynchronizationRhythm}
-              disabled={running}
-            >
-              {t.sidebar.actions.generateSyncRhythm}
-            </button>
+            <label>
+              <input
+                type="checkbox"
+                checked={options.playRhythmSound ?? true}
+                onChange={(e) => changeField('playRhythmSound', e.target.checked)}
+              />
+              {t.sidebar.fields.playRhythmSound}
+            </label>
           </div>
 
           <div className="field-group">

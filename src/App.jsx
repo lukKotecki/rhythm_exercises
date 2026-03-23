@@ -36,6 +36,7 @@ function App() {
       tappedRhythmSyncPercent: 0,
       showMovingProgressIndicator: true,
       showExpectedRhythmGrid: true,
+      playRhythmSound: true,
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
     };
     try {
@@ -208,12 +209,7 @@ function App() {
     setRunning(true);
   }
 
-  function handleDelayCalibration() {
-    if (running) return;
-    setExerciseMode('delay-calibration');
-    generateBars('delay-calibration');
-    setRunning(true);
-  }
+
 
   function handlePause() {
     // Pause playback but keep generated rhythm and paused time
@@ -283,7 +279,6 @@ function App() {
             t={t}
             options={options}
             onChangeOptions={setOptions}
-            onGenerateSynchronizationRhythm={handleDelayCalibration}
             running={running}
             open={sidebarOpen}
           />
@@ -304,6 +299,7 @@ function App() {
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
               metronomeSound={options.metronomeSound}
               bpm={options.bpm}
+              playRhythmSound={options.playRhythmSound}
               exerciseMode={exerciseMode}
               running={running}
               pausedElapsed={pausedElapsed}

@@ -50,9 +50,7 @@ export const TRANSLATIONS = {
         accuracyGrid: 'Accuracy grid',
         userTapSync: 'User tap sync',
         expectedGrid: 'Show expected rhythm grid on progress bar',
-      },
-      actions: {
-        generateSyncRhythm: 'Generate synchronization rhythm',
+        playRhythmSound: 'Play rhythm with me',
       },
       noteNames: {
         whole: 'Whole',
@@ -128,9 +126,7 @@ export const TRANSLATIONS = {
         accuracyGrid: 'Siatka dokladnosci',
         userTapSync: 'Synchronizacja klikniecia',
         expectedGrid: 'Pokaz oczekiwana siatke rytmu na pasku postepu',
-      },
-      actions: {
-        generateSyncRhythm: 'Generuj rytm synchronizacji',
+        playRhythmSound: 'Graj rytm ze mną',
       },
       noteNames: {
         whole: 'cała nuta',

@@ -149,6 +149,12 @@ function playMetronomeClick(audioCtx, soundConfig, isAccent) {
   }
 }
 
+function playRhythmCue(audioCtx, soundConfig) {
+  const beatFreq = soundConfig?.beatFreq || 1000;
+  const rhythmFreq = Math.max(220, Math.min(2600, beatFreq * 1.2));
+  playWaveClick(audioCtx, 'triangle', rhythmFreq, 0.045);
+}
+
 function findClosestSlot(expectedSet, targetSlot, predicate = null) {
   let bestSlot = null;
   let bestDistance = Number.POSITIVE_INFINITY;
@@ -284,6 +290,7 @@ export default function RhythmArea({
   showExpectedRhythmGrid,
   metronomeSound,
   bpm = 60,
+  playRhythmSound = true,
   exerciseMode,
   running,
   pausedElapsed = 0,
@@ -309,6 +316,9 @@ export default function RhythmArea({
   const rafRef = useRef(null);
   const startTokenRef = useRef(0);
   const audioPrimedRef = useRef(false);
+  const rhythmPlayIndexRef = useRef(0);
+  const lastAudioElapsedRef = useRef(0);
+  const playRhythmSoundRef = useRef(true);
   const calibrationSentRef = useRef(false);
   const finishedNaturallyRef = useRef(false);
   const rewardShownRef = useRef(false);
@@ -405,7 +415,10 @@ export default function RhythmArea({
     setShowConfetti(false);
     rewardShownRef.current = false;
     calibrationSentRef.current = false;
-  }, [barsData, timeSignature, tappedRhythmAccuracy, bpm, legatoEnabled, legatoFrequency]);
+    rhythmPlayIndexRef.current = 0;
+    lastAudioElapsedRef.current = 0;
+    playRhythmSoundRef.current = playRhythmSound;
+  }, [barsData, timeSignature, tappedRhythmAccuracy, bpm, legatoEnabled, legatoFrequency, playRhythmSound]);
 
   async function ensureAudioReady() {
     if (!audioCtx.current) {
@@ -449,6 +462,13 @@ export default function RhythmArea({
     const resumeFrom = pausedElapsed > 0 ? pausedElapsed : 0;
     startTimeRef.current = ctx.currentTime - resumeFrom;
     finishedNaturallyRef.current = false;
+    lastAudioElapsedRef.current = resumeFrom;
+    const expectedTimes = expectedTapTimesRef.current;
+    let nextExpectedIndex = 0;
+    while (nextExpectedIndex < expectedTimes.length && expectedTimes[nextExpectedIndex] < resumeFrom - 0.001) {
+      nextExpectedIndex += 1;
+    }
+    rhythmPlayIndexRef.current = nextExpectedIndex;
     // start from resume position
     setElapsed(resumeFrom);
     // determine beats per bar and beat value from timeSignature
@@ -498,6 +518,20 @@ export default function RhythmArea({
     // start animation frame for elapsed
     function update() {
       const currentElapsed = ctx.currentTime - startTimeRef.current;
+      const previousElapsed = lastAudioElapsedRef.current;
+      const nextExpectedTimes = expectedTapTimesRef.current;
+
+      // Trigger rhythm sound exactly when progress crosses expected rhythm positions.
+      while (rhythmPlayIndexRef.current < nextExpectedTimes.length) {
+        const expectedTime = nextExpectedTimes[rhythmPlayIndexRef.current];
+        if (expectedTime > currentElapsed) break;
+        if (expectedTime >= previousElapsed - 0.001 && playRhythmSoundRef.current) {
+          playRhythmCue(ctx, metronomeSound);
+        }
+        rhythmPlayIndexRef.current += 1;
+      }
+
+      lastAudioElapsedRef.current = currentElapsed;
       setElapsed(currentElapsed);
       rafRef.current = requestAnimationFrame(update);
     }
@@ -514,6 +548,8 @@ export default function RhythmArea({
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    rhythmPlayIndexRef.current = 0;
+    lastAudioElapsedRef.current = 0;
     if (onPause) onPause();
   }
 
