@@ -1,5 +1,12 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path d="M6.8 5.2 H15.6 L10.6 14.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M10.6 14.5 C10.2 15.9 9.2 16.8 7.9 17.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
-  <circle cx="7.4" cy="19.3" r="2" fill="currentColor"/>
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+ <g>
+  <title>Layer 1</title>
+  <circle cx="6.10968" cy="5.88066" r="2" fill="currentColor" id="svg_3"/>
+  <path fill="currentColor" opacity="NaN" d="m16.38709,7.38065" id="svg_7"/>
+  <path fill="none" opacity="NaN" d="m6.19355,9.31613c11.87096,2.83871 9.67741,10.4516 11.74192,2.83871c2.06451,-7.6129 -1.54839,-11.87096 -1.93548,-6.58064c-0.3871,5.29032 5.67741,1.29032 5.67741,1.16129c0,-0.12903 -9.41935,4.64516 -10.96773,1.54839" id="svg_10"/>
+  <path id="svg_8" d="m6.6684,6.17425c8.19246,2.3407 5.59168,2.86086 12.09363,0.13004" opacity="NaN" stroke-width="2" stroke="currentColor" fill="none"/>
+  <path id="svg_9" d="m18.24188,5.6541c-10.53316,10.53316 -10.79324,14.95449 -10.92328,11.83355" opacity="NaN" stroke-width="2" stroke="currentColor" fill="none"/>
+ </g>
+
 </svg>
+

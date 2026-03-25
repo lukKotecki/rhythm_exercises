@@ -71,6 +71,10 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
       onChangeOptions({ ...options, showExpectedRhythmGrid: !!value });
       return;
     }
+    if (field === 'noteGraphicsMode') {
+      onChangeOptions({ ...options, noteGraphicsMode: value });
+      return;
+    }
     if (field === 'tappedRhythmAccuracy') {
       const parsed = parseInt(value, 10);
       const bounded = Number.isNaN(parsed) ? 12 : Math.max(4, Math.min(100, parsed));
@@ -144,7 +148,7 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
               <span
                 className="sidebar-note-preview"
               >
-                <NoteRenderer type="note" name={n} size={18} />
+                <NoteRenderer type="note" name={n} size={18} mode={options.noteGraphicsMode ?? 'svg'} />
               </span>
               {t.sidebar.noteNames[n]}
             </label>
@@ -180,6 +184,18 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
               />
             </div>
           </div>
+          <div className="field-group">
+            <label className="field-label">
+              {t.sidebar.fields.noteGraphics}:
+              <select
+                value={options.noteGraphicsMode ?? 'svg'}
+                onChange={(e) => changeField('noteGraphicsMode', e.target.value)}
+              >
+                <option value="svg">SVG</option>
+                <option value="unicode">Unicode</option>
+              </select>
+            </label>
+          </div>
         </AccordionSection>
 
         <AccordionSection id="pauseValues" title={t.sidebar.sections.restValues}>
@@ -193,7 +209,7 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
               <span
                 className="sidebar-note-preview"
               >
-                <NoteRenderer type="rest" name={n} size={18} />
+                <NoteRenderer type="rest" name={n} size={18} mode={options.noteGraphicsMode ?? 'svg'} />
               </span>
               {t.sidebar.restNames[n]}
             </label>

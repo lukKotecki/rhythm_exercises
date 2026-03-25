@@ -40,6 +40,7 @@ export const TRANSLATIONS = {
       fields: {
         legato: 'Legato',
         legatoFrequency: 'Legato frequency',
+        noteGraphics: 'Note graphics unicode/svg',
         timeSignature: 'Time signature',
         numberOfBars: 'Number of bars',
         tempo: 'Tempo',
@@ -116,6 +117,7 @@ export const TRANSLATIONS = {
       fields: {
         legato: 'Legato',
         legatoFrequency: 'Czestotliwosc legato',
+        noteGraphics: 'Grafika nut unicode/svg',
         timeSignature: 'Metrum',
         numberOfBars: 'Liczba taktow',
         tempo: 'Tempo',

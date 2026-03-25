@@ -28,6 +28,7 @@ function App() {
       rests: { whole: false, half: false, quarter: false, eighth: false, sixteenth: false },
       legato: false,
       legatoFrequency: 50,
+      noteGraphicsMode: 'svg',
       timeSignature: '4/4',
       articulation: 'legato',
       bars: 4,
@@ -289,6 +290,7 @@ function App() {
               userTapSyncPercent={options.tappedRhythmSyncPercent}
               legatoEnabled={options.legato}
               legatoFrequency={options.legatoFrequency}
+              noteGraphicsMode={options.noteGraphicsMode}
               repeatToken={repeatToken}
               focusMainToken={focusMainToken}
               showMovingProgressIndicator={options.showMovingProgressIndicator}

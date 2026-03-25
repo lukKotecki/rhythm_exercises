@@ -46,12 +46,43 @@ const GROUP_GLYPHS = {
   'triplet-eighth': tripletEighthSvg,
 };
 
+// Unicode musical note symbols
+const UNICODE_NOTES = {
+  whole: '𝅗',      // U+1D15E
+  half: '𝅗𝅥',       // U+1D15E
+  quarter: '𝅘𝅥',   // U+1D15F U+1D165
+  eighth: '𝅘𝅥𝅮',   // U+1D15F U+1D165 U+1D16E
+  sixteenth: '𝅘𝅥𝅯', // U+1D15F U+1D165 U+1D16F
+};
+
+const UNICODE_RESTS = {
+  whole: '𝄻',      // U+1D13B
+  half: '𝄼',       // U+1D13C
+  quarter: '𝄽',    // U+1D13D
+  eighth: '𝄾',     // U+1D13E
+  sixteenth: '𝄿',  // U+1D13F
+};
+
 function extractSvgBody(rawSvg) {
   const match = rawSvg?.match(/<svg[^>]*>([\s\S]*?)<\/svg>/i);
   return match ? match[1] : rawSvg;
 }
 
-export default function NoteRenderer({ type = 'note', name = 'quarter', size = 24, className = '' }) {
+export default function NoteRenderer({ type = 'note', name = 'quarter', size = 24, className = '', mode = 'svg' }) {
+  // If mode is unicode, render unicode symbol
+  if (mode === 'unicode') {
+    const unicodeMap = type === 'rest' ? UNICODE_RESTS : UNICODE_NOTES;
+    const unicodeChar = unicodeMap[name];
+    if (unicodeChar) {
+      return (
+        <span className={`note-unicode ${className}`.trim()} style={{ fontSize: size }}>
+          {unicodeChar}
+        </span>
+      );
+    }
+  }
+
+  // Otherwise render SVG (default behavior)
   const glyphCollection = type === 'rest' ? REST_GLYPHS : type === 'group' ? GROUP_GLYPHS : NOTE_GLYPHS;
   const fallbackCollection = type === 'rest' ? REST_GLYPHS : NOTE_GLYPHS;
   const rawSvg = glyphCollection[name] || fallbackCollection.quarter;

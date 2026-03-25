@@ -285,6 +285,7 @@ export default function RhythmArea({
   userTapSyncPercent,
   legatoEnabled = false,
   legatoFrequency = 50,
+  noteGraphicsMode = 'svg',
   repeatToken = 0,
   focusMainToken = 0,
   showMovingProgressIndicator = true,
@@ -970,7 +971,7 @@ export default function RhythmArea({
                       className={`note ${note.type}${note.accent ? ' accent' : ''}`}
                       style={{ width: getNoteWidth(note.duration), flex: '0 0 auto' }}
                     >
-                      <NoteRenderer type={note.type} name={note.name} />
+                      <NoteRenderer type={note.type} name={note.name} mode={noteGraphicsMode} />
                     </span>
                   ))}
                 </div>
