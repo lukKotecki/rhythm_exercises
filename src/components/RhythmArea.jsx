@@ -10,21 +10,21 @@ function timeToSlot(offsetInBar, beatDuration, slotsPerBeat) {
 
 const OSC_WAVEFORMS = new Set(['sine', 'square', 'triangle', 'sawtooth']);
 
-function playWaveClick(audioCtx, waveform, frequency, durationSec = 0.05) {
+function playWaveClick(audioCtx, waveform, frequency, durationSec = 0.05, startAt = audioCtx.currentTime) {
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = waveform;
   osc.frequency.value = frequency;
-  gain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.005);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+  gain.gain.setValueAtTime(0.0001, startAt);
+  gain.gain.exponentialRampToValueAtTime(0.25, startAt + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSec);
   osc.connect(gain);
   gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + durationSec);
+  osc.start(startAt);
+  osc.stop(startAt + durationSec);
 }
 
-function playCowbellClick(audioCtx, frequency, isAccent) {
+function playCowbellClick(audioCtx, frequency, isAccent, startAt = audioCtx.currentTime) {
   const durationSec = isAccent ? 0.11 : 0.09;
   const gain = audioCtx.createGain();
   const hp = audioCtx.createBiquadFilter();
@@ -38,21 +38,21 @@ function playCowbellClick(audioCtx, frequency, isAccent) {
   osc1.frequency.value = frequency;
   osc2.frequency.value = frequency * 1.48;
 
-  gain.gain.setValueAtTime(isAccent ? 0.55 : 0.42, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+  gain.gain.setValueAtTime(isAccent ? 0.55 : 0.42, startAt);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSec);
 
   osc1.connect(gain);
   osc2.connect(gain);
   gain.connect(hp);
   hp.connect(audioCtx.destination);
 
-  osc1.start();
-  osc2.start();
-  osc1.stop(audioCtx.currentTime + durationSec);
-  osc2.stop(audioCtx.currentTime + durationSec);
+  osc1.start(startAt);
+  osc2.start(startAt);
+  osc1.stop(startAt + durationSec);
+  osc2.stop(startAt + durationSec);
 }
 
-function playWoodblockClick(audioCtx, frequency, isAccent) {
+function playWoodblockClick(audioCtx, frequency, isAccent, startAt = audioCtx.currentTime) {
   const durationSec = isAccent ? 0.08 : 0.06;
   const osc = audioCtx.createOscillator();
   const bp = audioCtx.createBiquadFilter();
@@ -64,17 +64,17 @@ function playWoodblockClick(audioCtx, frequency, isAccent) {
   bp.frequency.value = frequency;
   bp.Q.value = 12;
 
-  gain.gain.setValueAtTime(isAccent ? 0.5 : 0.35, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+  gain.gain.setValueAtTime(isAccent ? 0.5 : 0.35, startAt);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSec);
 
   osc.connect(bp);
   bp.connect(gain);
   gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + durationSec);
+  osc.start(startAt);
+  osc.stop(startAt + durationSec);
 }
 
-function playClaveClick(audioCtx, frequency, isAccent) {
+function playClaveClick(audioCtx, frequency, isAccent, startAt = audioCtx.currentTime) {
   const durationSec = isAccent ? 0.06 : 0.05;
   const osc = audioCtx.createOscillator();
   const hp = audioCtx.createBiquadFilter();
@@ -85,17 +85,17 @@ function playClaveClick(audioCtx, frequency, isAccent) {
   hp.type = 'highpass';
   hp.frequency.value = 1200;
 
-  gain.gain.setValueAtTime(isAccent ? 0.45 : 0.3, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+  gain.gain.setValueAtTime(isAccent ? 0.45 : 0.3, startAt);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSec);
 
   osc.connect(hp);
   hp.connect(gain);
   gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + durationSec);
+  osc.start(startAt);
+  osc.stop(startAt + durationSec);
 }
 
-function playHiHatClick(audioCtx, isAccent) {
+function playHiHatClick(audioCtx, isAccent, startAt = audioCtx.currentTime) {
   const durationSec = isAccent ? 0.05 : 0.035;
   const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * durationSec, audioCtx.sampleRate);
   const data = buffer.getChannelData(0);
@@ -111,41 +111,41 @@ function playHiHatClick(audioCtx, isAccent) {
   hp.frequency.value = isAccent ? 5000 : 6500;
 
   const gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(isAccent ? 0.5 : 0.35, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + durationSec);
+  gain.gain.setValueAtTime(isAccent ? 0.5 : 0.35, startAt);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSec);
 
   src.connect(hp);
   hp.connect(gain);
   gain.connect(audioCtx.destination);
-  src.start();
-  src.stop(audioCtx.currentTime + durationSec);
+  src.start(startAt);
+  src.stop(startAt + durationSec);
 }
 
-function playMetronomeClick(audioCtx, soundConfig, isAccent) {
+function playMetronomeClick(audioCtx, soundConfig, isAccent, startAt = audioCtx.currentTime) {
   const sound = soundConfig || {};
   const selected = sound.waveform || 'sine';
   const baseFreq = isAccent ? (sound.accentFreq || 1500) : (sound.beatFreq || 1000);
 
   if (OSC_WAVEFORMS.has(selected)) {
-    playWaveClick(audioCtx, selected, baseFreq, 0.05);
+    playWaveClick(audioCtx, selected, baseFreq, 0.05, startAt);
     return;
   }
 
   switch (selected) {
     case 'cowbell':
-      playCowbellClick(audioCtx, baseFreq, isAccent);
+      playCowbellClick(audioCtx, baseFreq, isAccent, startAt);
       break;
     case 'woodblock':
-      playWoodblockClick(audioCtx, baseFreq, isAccent);
+      playWoodblockClick(audioCtx, baseFreq, isAccent, startAt);
       break;
     case 'clave':
-      playClaveClick(audioCtx, baseFreq, isAccent);
+      playClaveClick(audioCtx, baseFreq, isAccent, startAt);
       break;
     case 'hihat':
-      playHiHatClick(audioCtx, isAccent);
+      playHiHatClick(audioCtx, isAccent, startAt);
       break;
     default:
-      playWaveClick(audioCtx, 'sine', baseFreq, 0.05);
+      playWaveClick(audioCtx, 'sine', baseFreq, 0.05, startAt);
       break;
   }
 }
@@ -258,12 +258,13 @@ function calculateOverallTimingAccuracy(expectedTapTimes, userTapTimes, beatDura
   const expected = [...expectedTapTimes].sort((a, b) => a - b);
   const user = [...(userTapTimes || [])].sort((a, b) => a - b);
   const pairCount = Math.min(expected.length, user.length);
-  const toleranceSec = Math.max(0.05, (beatDurationSec || 1) * 0.35);
+  const toleranceSec = Math.max(0.06, (beatDurationSec || 1) * 0.45);
 
   let distanceScore = 0;
   for (let i = 0; i < pairCount; i++) {
     const distance = Math.abs(user[i] - expected[i]);
-    const normalized = Math.max(0, 1 - distance / toleranceSec);
+    const ratio = Math.min(1, distance / toleranceSec);
+    const normalized = Math.max(0, 1 - ratio ** 1.35);
     distanceScore += normalized;
   }
   const distanceAvg = pairCount > 0 ? distanceScore / pairCount : 0;
@@ -314,6 +315,7 @@ export default function RhythmArea({
   const audioCtx = useRef(null);
   const mainRef = useRef(null);
   const intervalRef = useRef(null);
+  const startTimeoutRef = useRef(null);
   const startTimeRef = useRef(null);
   const rafRef = useRef(null);
   const startTokenRef = useRef(0);
@@ -340,6 +342,7 @@ export default function RhythmArea({
   const ignoredByBarRef = useRef([]);
   const legatoSegmentsByBarRef = useRef([]);
   const expectedTapTimesRef = useRef([]);
+  const totalDurationRef = useRef(0);
   // timing lookup built when barsData changes
   const timingMapRef = useRef({ beatsPerBar: 4, beatDuration: 1, slotsPerBeat: 12, barStarts: [], barEnds: [] });
   const [totalDuration, setTotalDuration] = useState(0);
@@ -348,6 +351,7 @@ export default function RhythmArea({
   useEffect(() => {
     if (barsData.length === 0) {
       expectedByBarRef.current = [];
+      totalDurationRef.current = 0;
       timingMapRef.current = { beatsPerBar: 4, beatDuration: 1, slotsPerBeat: 12, barStarts: [], barEnds: [] };
       return;
     }
@@ -405,6 +409,7 @@ export default function RhythmArea({
     ignoredByBarRef.current = ignoredByBar;
     legatoSegmentsByBarRef.current = segmentsByBar;
     expectedTapTimesRef.current = expectedTapTimes;
+    totalDurationRef.current = time;
     timingMapRef.current = { beatsPerBar, beatDuration, slotsPerBeat, barStarts, barEnds };
     setTotalDuration(time);
     // reset tracking
@@ -455,6 +460,10 @@ export default function RhythmArea({
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    if (startTimeoutRef.current) {
+      clearTimeout(startTimeoutRef.current);
+      startTimeoutRef.current = null;
+    }
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -462,7 +471,8 @@ export default function RhythmArea({
 
     // Support resuming from paused elapsed time
     const resumeFrom = pausedElapsed > 0 ? pausedElapsed : 0;
-    startTimeRef.current = ctx.currentTime - resumeFrom;
+    const startupLeadInSec = resumeFrom > 0 ? 0 : 0.06;
+    startTimeRef.current = ctx.currentTime + startupLeadInSec - resumeFrom;
     finishedNaturallyRef.current = false;
     lastAudioElapsedRef.current = resumeFrom;
     const expectedTimes = expectedTapTimesRef.current;
@@ -484,7 +494,9 @@ export default function RhythmArea({
       if (!isNaN(d)) beatValue = 4 / d;
     }
     // scale by 60/bpm so that at 60 BPM one beat = 1 s, at 80 BPM = 0.75 s, etc.
-    const beatIntervalMs = beatValue * (60 / bpm) * 1000;
+    const beatIntervalSec = beatValue * (60 / bpm);
+    const beatIntervalMs = beatIntervalSec * 1000;
+    const exerciseTotalDuration = totalDurationRef.current;
     // Calculate which beat to start from based on resumeFrom
     const { barStarts, barEnds } = timingMapRef.current;
     let startBeat = 0;
@@ -496,32 +508,62 @@ export default function RhythmArea({
       }
     }
     let beat = startBeat;
+    let nextBeatAudioTime = ctx.currentTime + startupLeadInSec;
     const totalBeats = beatsPerBar * barsData.length;
-    const playBeat = () => {
-      // stop once we've played the requested number of beats
-      if (beat >= totalBeats) {
+    const schedulePendingBeats = () => {
+      if (startToken !== startTokenRef.current) return;
+      const scheduleLookAheadSec = 0.12;
+      while (beat < totalBeats && nextBeatAudioTime <= ctx.currentTime + scheduleLookAheadSec) {
+        const isAccent = beat % beatsPerBar === 0;
+        playMetronomeClick(ctx, metronomeSound, isAccent, nextBeatAudioTime);
+        beat += 1;
+        nextBeatAudioTime += beatIntervalSec;
+      }
+
+      if (beat >= totalBeats && intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+
+    schedulePendingBeats();
+    intervalRef.current = setInterval(schedulePendingBeats, Math.min(25, beatIntervalMs));
+
+    // start animation frame for elapsed
+    function update() {
+      const rawElapsed = ctx.currentTime - startTimeRef.current;
+      const currentElapsed = Math.max(resumeFrom, rawElapsed);
+      const previousElapsed = lastAudioElapsedRef.current;
+      const nextExpectedTimes = expectedTapTimesRef.current;
+      const { barStarts: tmBarStarts, barEnds: tmBarEnds, beatDuration: tmBeatDuration } = timingMapRef.current;
+
+      if (rawElapsed < 0 && resumeFrom <= 0) {
+        setCurrentBeat(-1);
+        setCurrentBar(-1);
+        setElapsed(0);
+        rafRef.current = requestAnimationFrame(update);
+        return;
+      }
+
+      if (currentElapsed >= exerciseTotalDuration) {
         finishedNaturallyRef.current = true;
-        setElapsed(totalDuration);
+        lastAudioElapsedRef.current = exerciseTotalDuration;
+        setElapsed(exerciseTotalDuration);
+        setCurrentBeat(-1);
+        setCurrentBar(-1);
         stopMetronome();
         return;
       }
 
-      setCurrentBeat(beat % beatsPerBar);
-      setCurrentBar(Math.floor(beat / beatsPerBar));
-
-      const isAccent = beat % beatsPerBar === 0;
-      playMetronomeClick(ctx, metronomeSound, isAccent);
-      beat += 1;
-    };
-
-    // play first click immediately; subsequent clicks keep the beat interval
-    playBeat();
-    intervalRef.current = setInterval(playBeat, beatIntervalMs);
-    // start animation frame for elapsed
-    function update() {
-      const currentElapsed = ctx.currentTime - startTimeRef.current;
-      const previousElapsed = lastAudioElapsedRef.current;
-      const nextExpectedTimes = expectedTapTimesRef.current;
+      const activeBarIndex = tmBarStarts.findIndex((start, idx) => currentElapsed >= start && currentElapsed < tmBarEnds[idx]);
+      if (activeBarIndex >= 0) {
+        const beatInBar = Math.max(0, Math.floor((currentElapsed - tmBarStarts[activeBarIndex]) / (tmBeatDuration || 1)));
+        setCurrentBar(activeBarIndex);
+        setCurrentBeat(Math.min(beatsPerBar - 1, beatInBar));
+      } else {
+        setCurrentBar(-1);
+        setCurrentBeat(-1);
+      }
 
       // Trigger rhythm sound exactly when progress crosses expected rhythm positions.
       while (rhythmPlayIndexRef.current < nextExpectedTimes.length) {
@@ -545,6 +587,10 @@ export default function RhythmArea({
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
+    }
+    if (startTimeoutRef.current) {
+      clearTimeout(startTimeoutRef.current);
+      startTimeoutRef.current = null;
     }
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);

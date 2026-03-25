@@ -1,7 +1,12 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path d="M13.6 3.7 C11.4 5.2 11 6.9 11.8 8.8 C12.5 10.4 13.3 11.7 12.9 13.3 C12.3 15.4 10.8 16.6 9 17.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M12.2 6.8 C14.8 6.9 15.8 8.4 14.3 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M11.8 9.9 C14.3 10 15.1 11.3 13.8 12.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-  <circle cx="8.4" cy="18.3" r="1.8" fill="currentColor"/>
-  <circle cx="8.4" cy="21.3" r="1.6" fill="currentColor"/>
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+
+ <g>
+  <title>Layer 1</title>
+  <ellipse ry="0.68259" rx="1.19454" id="svg_6" cy="7.47213" cx="7.05119" stroke-width="1.8" stroke="currentColor" fill="none"/>
+  <ellipse ry="0.62571" rx="0.96701" id="svg_7" cy="11.96587" cx="7.73379" stroke-width="1.8" stroke="currentColor" fill="none"/>
+  <path id="svg_11" d="m7.79067,6.9033c0.11377,0 5.80204,3.52673 9.8976,-0.3413" opacity="NaN" stroke-width="1.8" stroke="currentColor" fill="none"/>
+  <path id="svg_15" d="m-103.16263,-82.08961l6.08873,0.0364l-6.08873,-0.0364z" opacity="NaN" stroke-width="1.8" stroke="currentColor" fill="none"/>
+  <path id="svg_16" d="m8.70079,11.90899c0,0.11377 2.16155,1.93401 5.23322,0.22753" opacity="NaN" stroke-width="1.8" stroke="currentColor" fill="none"/>
+  <path id="svg_17" d="m17.46074,7.35836c0,0.22753 -8.87371,9.55631 -7.39476,10.92149" opacity="NaN" stroke-width="1.8" stroke="currentColor" fill="none"/>
+ </g>
 </svg>
