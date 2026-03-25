@@ -170,7 +170,7 @@ function App() {
         sum += choice.duration;
       }
 
-      bars.push(bar);
+      bars.push(combineAdjacentRestsInBeatBox(bar, beatValue));
     }
 
     // insert a warm-up bar at start
@@ -319,8 +319,73 @@ const durationMap = {
   whole: 4,
   half: 2,
   quarter: 1,
+  'dotted-eighth': 0.75,
   eighth: 0.5,
   sixteenth: 0.25,
 };
+
+function approxEqual(a, b, epsilon = 0.0001) {
+  return Math.abs(a - b) <= epsilon;
+}
+
+function restNameForDuration(duration) {
+  if (approxEqual(duration, 4)) return 'whole';
+  if (approxEqual(duration, 2)) return 'half';
+  if (approxEqual(duration, 1)) return 'quarter';
+  if (approxEqual(duration, 0.75)) return 'dotted-eighth';
+  if (approxEqual(duration, 0.5)) return 'eighth';
+  if (approxEqual(duration, 0.25)) return 'sixteenth';
+  return null;
+}
+
+function combineAdjacentRestsInBeatBox(bar, beatValue) {
+  const combined = [];
+  const epsilon = 0.0001;
+  let i = 0;
+  let cursor = 0;
+
+  while (i < bar.length) {
+    const current = bar[i];
+
+    if (current.type !== 'rest') {
+      combined.push(current);
+      cursor += current.duration;
+      i += 1;
+      continue;
+    }
+
+    const beatIdx = Math.floor((cursor + epsilon) / beatValue);
+    const beatEnd = (beatIdx + 1) * beatValue;
+    let j = i;
+    let runDuration = 0;
+
+    while (j < bar.length) {
+      const item = bar[j];
+      if (item.type !== 'rest') break;
+      if (cursor + runDuration + item.duration > beatEnd + epsilon) break;
+      runDuration += item.duration;
+      j += 1;
+    }
+
+    const mergedName = restNameForDuration(runDuration);
+    if (j > i + 1 && mergedName) {
+      combined.push({
+        ...current,
+        name: mergedName,
+        value: mergedName,
+        duration: runDuration,
+      });
+      cursor += runDuration;
+      i = j;
+      continue;
+    }
+
+    combined.push(current);
+    cursor += current.duration;
+    i += 1;
+  }
+
+  return combined;
+}
 
 export default App;

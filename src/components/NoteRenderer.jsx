@@ -9,6 +9,7 @@ import halfRestSvg from '../assets/musicGlyphs/half-rest.svg?raw';
 import quarterRestSvg from '../assets/musicGlyphs/quarter-rest.svg?raw';
 import eighthRestSvg from '../assets/musicGlyphs/eighth-rest.svg?raw';
 import sixteenthRestSvg from '../assets/musicGlyphs/sixteenth-rest.svg?raw';
+import dottedEighthRestSvg from '../assets/musicGlyphs/dotted-eighth-rest.svg?raw';
 
 import eighthPairSvg from '../assets/musicGlyphs/eighth-pair.svg?raw';
 import twoSixteenthAndEighthSvg from '../assets/musicGlyphs/two-sixteenth-and-eighth.svg?raw';
@@ -31,6 +32,7 @@ const REST_GLYPHS = {
   whole: wholeRestSvg,
   half: halfRestSvg,
   quarter: quarterRestSvg,
+  'dotted-eighth': dottedEighthRestSvg,
   eighth: eighthRestSvg,
   sixteenth: sixteenthRestSvg,
 };
@@ -59,6 +61,7 @@ const UNICODE_RESTS = {
   whole: '𝄻',      // U+1D13B
   half: '𝄼',       // U+1D13C
   quarter: '𝄽',    // U+1D13D
+  'dotted-eighth': '𝄾.',
   eighth: '𝄾',     // U+1D13E
   sixteenth: '𝄿',  // U+1D13F
 };
