@@ -1,1 +1,8 @@
-﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="6.8" y="11.2" width="10.4" height="3" rx="0.7" fill="currentColor"/></svg>
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+
+ <g>
+  <title>Layer 1</title>
+  <rect stroke="null" id="svg_1" fill="currentColor" rx="0.7" height="3.4" width="10.4" y="10.93333" x="6.53333"/>
+  <rect stroke="null" id="svg_2" fill="currentColor" rx="0.7" height="1.93333" width="22" y="14" x="1.06667"/>
+ </g>
+</svg>
