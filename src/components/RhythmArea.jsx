@@ -8,6 +8,44 @@ function timeToSlot(offsetInBar, beatDuration, slotsPerBeat) {
   return Math.floor((offsetInBar / beatDuration) * slotsPerBeat) + 1;
 }
 
+const GROUP_PATTERNS = [
+  { name: 'eighth-pair',                pattern: ['eighth', 'eighth'] },
+  { name: 'two-sixteenth-and-eighth',   pattern: ['sixteenth', 'sixteenth', 'eighth'] },
+  { name: 'eighth-and-two-sixteenth',   pattern: ['eighth', 'sixteenth', 'sixteenth'] },
+  { name: 'four-sixteenth',             pattern: ['sixteenth', 'sixteenth', 'sixteenth', 'sixteenth'] },
+  { name: 'sixteenth-eighth-sixteenth', pattern: ['sixteenth', 'eighth', 'sixteenth'] },
+];
+
+function groupNotesForRender(bar, beatValue) {
+  const items = [];
+  let cumDur = 0;
+  let i = 0;
+  while (i < bar.length) {
+    let matched = false;
+    for (const { name, pattern } of GROUP_PATTERNS) {
+      const len = pattern.length;
+      if (i + len > bar.length) continue;
+      const slice = bar.slice(i, i + len);
+      if (slice.some((n, j) => n.type !== 'note' || n.name !== pattern[j])) continue;
+      const totalDur = slice.reduce((s, n) => s + n.duration, 0);
+      if (Math.abs(totalDur - beatValue) > 0.001) continue;
+      const beatOffset = cumDur % beatValue;
+      if (beatOffset > 0.001 && beatValue - beatOffset > 0.001) continue;
+      items.push({ type: 'group', name, duration: totalDur, accent: slice[0].accent });
+      cumDur += totalDur;
+      i += len;
+      matched = true;
+      break;
+    }
+    if (!matched) {
+      items.push(bar[i]);
+      cumDur += bar[i].duration;
+      i++;
+    }
+  }
+  return items;
+}
+
 const OSC_WAVEFORMS = new Set(['sine', 'square', 'triangle', 'sawtooth']);
 
 function playWaveClick(audioCtx, waveform, frequency, durationSec = 0.05, startAt = audioCtx.currentTime) {
@@ -1011,13 +1049,13 @@ export default function RhythmArea({
                       />
                     );
                   })}
-                  {bar.map((note, j) => (
+                  {groupNotesForRender(bar, beatValue).map((note, j) => (
                     <span
                       key={j}
                       className={`note ${note.type}${note.accent ? ' accent' : ''}`}
                       style={{ width: getNoteWidth(note.duration), flex: '0 0 auto' }}
                     >
-                      <NoteRenderer type={note.type} name={note.name} mode={noteGraphicsMode} />
+                      <NoteRenderer type={note.type} name={note.name} mode={noteGraphicsMode} fillWidth={true} />
                     </span>
                   ))}
                 </div>

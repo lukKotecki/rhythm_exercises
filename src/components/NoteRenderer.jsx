@@ -71,7 +71,12 @@ function extractSvgBody(rawSvg) {
   return match ? match[1] : rawSvg;
 }
 
-export default function NoteRenderer({ type = 'note', name = 'quarter', size = 24, className = '', mode = 'svg' }) {
+function extractSvgViewBox(rawSvg) {
+  const m = rawSvg?.match(/viewBox\s*=\s*["']([^"']*)["']/i);
+  return m ? m[1] : '0 0 24 24';
+}
+
+export default function NoteRenderer({ type = 'note', name = 'quarter', size = 24, className = '', mode = 'svg', fillWidth = false }) {
   // If mode is unicode, render unicode symbol
   if (mode === 'unicode') {
     const unicodeMap = type === 'rest' ? UNICODE_RESTS : UNICODE_NOTES;
@@ -92,11 +97,15 @@ export default function NoteRenderer({ type = 'note', name = 'quarter', size = 2
   const svgBody = extractSvgBody(rawSvg);
   const cls = `note-glyph ${className}`.trim();
 
+  const isGroup = type === 'group';
+  const svgViewBox = extractSvgViewBox(rawSvg);
+  const svgWidth = fillWidth ? '100%' : size;
   return (
     <svg
-      viewBox="0 0 24 24"
+      viewBox={svgViewBox}
       className={cls}
-      style={{ width: size, height: size }}
+      style={{ width: svgWidth, height: size }}
+      preserveAspectRatio={isGroup && fillWidth ? 'none' : 'xMinYMid meet'}
       aria-hidden="true"
       focusable="false"
       dangerouslySetInnerHTML={{ __html: svgBody }}

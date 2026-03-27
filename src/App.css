@@ -763,13 +763,13 @@
   justify-content: flex-start;
   align-items: center;
   font-size: 1.5rem; /* larger notes */
-  padding-left: 0.1rem;
+  padding-left: 0;
   transition: all 0.2s;
   user-select: none;
 }
 
 .note .note-glyph {
-  width: 1.5rem;
+  width: 100%;
   height: 1.5rem;
 }
 
