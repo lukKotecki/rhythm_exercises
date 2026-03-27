@@ -1,7 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 24">
-  <ellipse cx="30" cy="18.5" rx="3.8" ry="2.8" transform="rotate(-18 30 18.5)" fill="currentColor"/>
-  <ellipse cx="90" cy="18.5" rx="3.8" ry="2.8" transform="rotate(-18 90 18.5)" fill="currentColor"/>
-  <line x1="33.3" y1="16" x2="33.3" y2="3.5" stroke="currentColor" stroke-width="1.7"/>
-  <line x1="93.3" y1="16" x2="93.3" y2="3.5" stroke="currentColor" stroke-width="1.7"/>
-  <rect x="33.3" y="3.5" width="60" height="2.2" fill="currentColor"/>
+
+ <g>
+  <title>Layer 1</title>
+  <ellipse transform="rotate(-18 10.2721 18.6361)" id="svg_1" fill="currentColor" ry="2.8" rx="3.8" cy="18.63605" cx="10.27211"/>
+  <ellipse transform="rotate(-18 70.2721 18.6361)" id="svg_2" fill="currentColor" ry="2.8" rx="3.8" cy="18.63605" cx="70.27211"/>
+  <line id="svg_3" stroke-width="1.7" stroke="currentColor" y2="3.63605" x2="13.57211" y1="16.13605" x1="13.57211"/>
+  <line id="svg_4" stroke-width="1.7" stroke="currentColor" y2="3.63605" x2="73.57211" y1="16.13605" x1="73.57211"/>
+  <rect id="svg_5" fill="currentColor" height="2.2" width="60" y="3.63605" x="13.57211"/>
+ </g>
+
+
+
 </svg>

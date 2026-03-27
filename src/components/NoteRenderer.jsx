@@ -99,7 +99,7 @@ export default function NoteRenderer({ type = 'note', name = 'quarter', size = 2
 
   const isGroup = type === 'group';
   const svgViewBox = extractSvgViewBox(rawSvg);
-  const svgWidth = fillWidth ? '100%' : size;
+  const svgWidth = isGroup && fillWidth ? '90%' : fillWidth ? '100%' : size;
   return (
     <svg
       viewBox={svgViewBox}
