@@ -2,6 +2,14 @@
 
 Interactive rhythm training web app for musicians. The app generates random bars based on selected note/rest values and lets you practice tap timing against a metronome with visual and per-bar accuracy feedback.
 
+## Live Demo
+
+You can test the app online at: https://rytm.mojestrony.pl
+
+## Screenshot
+
+![Rhythm Exercises app screenshot](docs/screenshots/rhythm-exercises-preview.png)
+
 ## Highlights
 
 - Random rhythm generation with configurable note values and rests
