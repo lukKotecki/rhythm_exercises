@@ -9,12 +9,10 @@ export default function Header({
   sidebarOpen,
   onToggleSidebar,
   onStart,
-  onResume,
   onNext,
   onPause,
   onReset,
   running,
-  hasBars,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pages = [

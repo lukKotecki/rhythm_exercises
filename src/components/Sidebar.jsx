@@ -22,7 +22,22 @@ const DEFAULT_EXPANDED = {
   tappedRhythm: false,
 };
 
-export default function Sidebar({ t, options, onChangeOptions, running, open }) {
+function AccordionSection({ id, title, children, isOpen, onToggle }) {
+  return (
+    <div className="accordion-section">
+      <button
+        className={`accordion-header${isOpen ? ' open' : ''}`}
+        onClick={() => onToggle(id)}
+      >
+        <span>{title}</span>
+        <span className="accordion-arrow">{isOpen ? '▲' : '▼'}</span>
+      </button>
+      {isOpen && <div className="accordion-body">{children}</div>}
+    </div>
+  );
+}
+
+export default function Sidebar({ t, options, onChangeOptions, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
   const metronomeSounds = [
@@ -111,22 +126,6 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
     });
   }
 
-  function AccordionSection({ id, title, children }) {
-    const isOpen = expanded[id];
-    return (
-      <div className="accordion-section">
-        <button
-          className={`accordion-header${isOpen ? ' open' : ''}`}
-          onClick={() => toggleSection(id)}
-        >
-          <span>{title}</span>
-          <span className="accordion-arrow">{isOpen ? '▲' : '▼'}</span>
-        </button>
-        {isOpen && <div className="accordion-body">{children}</div>}
-      </div>
-    );
-  }
-
   return (
     <aside
       ref={sidebarRef}
@@ -137,7 +136,7 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
     >
       <div className="sidebar-inner">
 
-        <AccordionSection id="noteValues" title={t.sidebar.sections.noteValues}>
+        <AccordionSection id="noteValues" title={t.sidebar.sections.noteValues} isOpen={expanded.noteValues} onToggle={toggleSection}>
           {noteNames.map((n) => (
             <label key={n}>
               <input
@@ -198,7 +197,7 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
           </div>
         </AccordionSection>
 
-        <AccordionSection id="pauseValues" title={t.sidebar.sections.restValues}>
+        <AccordionSection id="pauseValues" title={t.sidebar.sections.restValues} isOpen={expanded.pauseValues} onToggle={toggleSection}>
           {noteNames.map((n) => (
             <label key={n}>
               <input
@@ -216,7 +215,7 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
           ))}
         </AccordionSection>
 
-        <AccordionSection id="barSettings" title={t.sidebar.sections.barSettings}>
+        <AccordionSection id="barSettings" title={t.sidebar.sections.barSettings} isOpen={expanded.barSettings} onToggle={toggleSection}>
           <div className="field-group">
             <label className="field-label">{t.sidebar.fields.timeSignature}</label>
             <select
@@ -239,7 +238,7 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
           </div>
         </AccordionSection>
 
-        <AccordionSection id="metronome" title={t.sidebar.sections.metronome}>
+        <AccordionSection id="metronome" title={t.sidebar.sections.metronome} isOpen={expanded.metronome} onToggle={toggleSection}>
           <div className="field-group">
             <label className="field-label">
               {t.sidebar.fields.tempo}: <strong>{options.bpm ?? 60} BPM</strong>
@@ -333,7 +332,7 @@ export default function Sidebar({ t, options, onChangeOptions, running, open }) 
           </div>
         </AccordionSection>
 
-        <AccordionSection id="tappedRhythm" title={t.sidebar.sections.synchronization}>
+        <AccordionSection id="tappedRhythm" title={t.sidebar.sections.synchronization} isOpen={expanded.tappedRhythm} onToggle={toggleSection}>
           <div className="field-group">
             <label>
               <input

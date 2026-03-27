@@ -200,25 +200,9 @@ function App() {
     setRunning(true);
   }
 
-  function handleResume() {
-    // Resume from paused state
-    if (running) return;
-    setRunning(true);
-  }
-
-
-
   function handlePause() {
     // Pause playback but keep generated rhythm and paused time
     setRunning(false);
-  }
-
-  function handleStop() {
-    // Stop playback and reset everything
-    setBarsData([]);
-    setRunning(false);
-    setPausedElapsed(0);
-    setExerciseMode('normal');
   }
 
   function handleReset() {
@@ -263,12 +247,10 @@ function App() {
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
         onStart={handleStart}
-        onResume={handleResume}
         onNext={handleNext}
         onPause={handlePause}
         onReset={handleReset}
         running={running}
-        hasBars={barsData.length > 0}
       />
       <div className="content-wrap">
         {sidebarOpen && (
@@ -276,7 +258,6 @@ function App() {
             t={t}
             options={options}
             onChangeOptions={setOptions}
-            running={running}
             open={sidebarOpen}
           />
         )}
