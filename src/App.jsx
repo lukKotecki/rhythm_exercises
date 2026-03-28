@@ -37,6 +37,7 @@ function App() {
       tappedRhythmSyncPercent: 0,
       showMovingProgressIndicator: true,
       showExpectedRhythmGrid: true,
+      useResponsiveBeatBoxWidth: true,
       playRhythmSound: true,
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
     };
@@ -233,6 +234,10 @@ function App() {
     setExerciseMode('normal');
   }
 
+  function handleRequestMainFocus() {
+    setFocusMainToken((prev) => prev + 1);
+  }
+
   return (
     <div className="app-container">
       <Header
@@ -246,6 +251,7 @@ function App() {
         }}
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
+        onRequestMainFocus={handleRequestMainFocus}
         onStart={handleStart}
         onNext={handleNext}
         onPause={handlePause}
@@ -258,6 +264,7 @@ function App() {
             t={t}
             options={options}
             onChangeOptions={setOptions}
+            onRequestMainFocus={handleRequestMainFocus}
             open={sidebarOpen}
           />
         )}
@@ -276,6 +283,7 @@ function App() {
               focusMainToken={focusMainToken}
               showMovingProgressIndicator={options.showMovingProgressIndicator}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
+              useResponsiveBeatBoxWidth={options.useResponsiveBeatBoxWidth}
               metronomeSound={options.metronomeSound}
               bpm={options.bpm}
               playRhythmSound={options.playRhythmSound}

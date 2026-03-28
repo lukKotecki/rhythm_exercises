@@ -329,6 +329,7 @@ export default function RhythmArea({
   focusMainToken = 0,
   showMovingProgressIndicator = true,
   showExpectedRhythmGrid,
+  useResponsiveBeatBoxWidth = true,
   metronomeSound,
   bpm = 60,
   playRhythmSound = true,
@@ -1001,22 +1002,25 @@ export default function RhythmArea({
             const expectedSlotSet = new Set(expectedSlots);
             const missingSlotSet = new Set(missingExpectedByBar[i] || []);
             const totalBarDuration = beats * beatValue; // in quarter-note units
+            const desktopBeatBoxUnit = useResponsiveBeatBoxWidth ? 'var(--beat-box-unit)' : '3.3cm';
 
             // Mobile: percentage-based layout so each bar fills full container width.
-            // Desktop: fixed cm-based layout.
-            const barWidthStr = isSmallScreen ? '100%' : `${totalBarDuration * 3.3}cm`;
+            // Desktop/tablet: either responsive or fixed beat-box unit (user setting).
             const getBeatBoxLeft = (beatIdx) => isSmallScreen
               ? `${(beatIdx / beats) * 100}%`
-              : `${beatIdx * beatValue * 3.3}cm`;
+              : `calc(${beatIdx * beatValue} * ${desktopBeatBoxUnit})`;
             const beatBoxWidthStr = isSmallScreen
               ? `${(1 / beats) * 100}%`
-              : `${beatValue * 3.3}cm`;
+              : `calc(${beatValue} * ${desktopBeatBoxUnit})`;
             const getNoteWidth = (dur) => isSmallScreen
               ? `${(dur / totalBarDuration) * 100}%`
-              : `${(dur / beatValue) * beatValue * 3.3}cm`;
+              : `calc(${dur} * ${desktopBeatBoxUnit})`;
             const getCountLeft = (j) => isSmallScreen
               ? `${((j + 0.5) / beats) * 100}%`
-              : `${(j * beatValue + beatValue / 2) * 3.3}cm`;
+              : `calc(${j * beatValue + beatValue / 2} * ${desktopBeatBoxUnit})`;
+            const responsiveBarWidthStr = isSmallScreen
+              ? '100%'
+              : `calc(${totalBarDuration} * ${desktopBeatBoxUnit})`;
 
             const isNewLineBar = !!barStartsNewLineRef.current[i];
             const legatoPairs = (legatoSegmentsByBarRef.current[i] || []).filter(
@@ -1031,7 +1035,7 @@ export default function RhythmArea({
                   barWrapperRefs.current[i] = el;
                 }}
               >
-                <div className="bar" style={{ width: barWidthStr }}>
+                <div className="bar" style={{ width: responsiveBarWidthStr }}>
                   {/* beat-box visual containers */}
                   {Array.from({ length: beats }, (_, beatIdx) => {
                     const isActiveBeatBox = i === currentBar && beatIdx === currentBeat;
@@ -1060,7 +1064,7 @@ export default function RhythmArea({
                   ))}
                 </div>
                 {legatoEnabled && i > 0 && (
-                  <div className="legato-lane" style={{ width: barWidthStr }}>
+                  <div className="legato-lane" style={{ width: responsiveBarWidthStr }}>
                     {legatoPairs.map((pair, pairIdx) => {
                       const widthPct = Math.max(2.4, pair.toPct - pair.fromPct);
                       return (
@@ -1077,7 +1081,7 @@ export default function RhythmArea({
                     })}
                   </div>
                 )}
-                <div className="count-bar" style={{ width: barWidthStr }}>
+                <div className="count-bar" style={{ width: responsiveBarWidthStr }}>
                   {Array.from({ length: beats }, (_, j) => (
                     <span
                       key={j}
@@ -1088,7 +1092,7 @@ export default function RhythmArea({
                     </span>
                   ))}
                 </div>
-                <div className="bar-progress" style={{ width: barWidthStr }}>
+                <div className="bar-progress" style={{ width: responsiveBarWidthStr }}>
                   {showMovingProgressIndicator !== false && (
                     <div
                       className="bar-progress-fill"

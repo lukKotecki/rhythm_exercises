@@ -33,9 +33,10 @@ export const TRANSLATIONS = {
       sections: {
         noteValues: 'Note values',
         restValues: 'Rest values',
-        barSettings: 'Bar settings',
+        barSettings: 'Settings',
         metronome: 'Metronome settings',
         synchronization: 'Synchronization',
+        advancedSettings: 'Advanced',
       },
       fields: {
         legato: 'Legato',
@@ -52,6 +53,7 @@ export const TRANSLATIONS = {
         userTapSync: 'User tap sync',
         expectedGrid: 'Show expected rhythm grid on progress bar',
         playRhythmSound: 'Play rhythm with me',
+        useResponsiveBeatBoxWidth: 'Responsive beat-box width',
       },
       noteNames: {
         whole: 'Whole',
@@ -110,9 +112,10 @@ export const TRANSLATIONS = {
       sections: {
         noteValues: 'Wartosci nut',
         restValues: 'Wartosci pauz',
-        barSettings: 'Ustawienia taktow',
+        barSettings: 'Ustawienia',
         metronome: 'Ustawienia metronomu',
         synchronization: 'Synchronizacja',
+        advancedSettings: 'Zaawansowane',
       },
       fields: {
         legato: 'Legato',
@@ -129,6 +132,7 @@ export const TRANSLATIONS = {
         userTapSync: 'Synchronizacja klikniecia',
         expectedGrid: 'Pokaz oczekiwana siatke rytmu na pasku postepu',
         playRhythmSound: 'Graj rytm ze mną',
+        useResponsiveBeatBoxWidth: 'Responsywna szerokosc beat-boxow',
       },
       noteNames: {
         whole: 'cała nuta',

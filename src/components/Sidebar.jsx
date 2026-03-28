@@ -18,13 +18,12 @@ const DEFAULT_EXPANDED = {
   noteValues: false,
   pauseValues: false,
   barSettings: false,
-  metronome: false,
-  tappedRhythm: false,
+  advancedSettings: false,
 };
 
 function AccordionSection({ id, title, children, isOpen, onToggle }) {
   return (
-    <div className="accordion-section">
+    <div className={`accordion-section${isOpen ? ' open' : ''}`}>
       <button
         className={`accordion-header${isOpen ? ' open' : ''}`}
         onClick={() => onToggle(id)}
@@ -37,7 +36,63 @@ function AccordionSection({ id, title, children, isOpen, onToggle }) {
   );
 }
 
-export default function Sidebar({ t, options, onChangeOptions, open }) {
+function NumericControl({
+  value,
+  min,
+  max,
+  step = 1,
+  onChange,
+  suffix = '',
+  ariaLabel,
+}) {
+  const numericValue = Number.isFinite(Number(value)) ? Number(value) : min;
+
+  const handleDecrease = () => {
+    onChange(Math.max(min, numericValue - step));
+  };
+
+  const handleIncrease = () => {
+    onChange(Math.min(max, numericValue + step));
+  };
+
+  return (
+    <div className="numeric-control">
+      <input
+        className="numeric-control-slider"
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={numericValue}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={ariaLabel}
+      />
+      <div className="numeric-control-row">
+        <button
+          type="button"
+          className="numeric-step-button"
+          onClick={handleDecrease}
+          aria-label={`${ariaLabel} minus`}
+        >
+          -
+        </button>
+        <div className="numeric-control-value" aria-live="polite">
+          {numericValue}{suffix}
+        </div>
+        <button
+          type="button"
+          className="numeric-step-button"
+          onClick={handleIncrease}
+          aria-label={`${ariaLabel} plus`}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocus, open }) {
   const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
   const metronomeSounds = [
@@ -73,6 +128,7 @@ export default function Sidebar({ t, options, onChangeOptions, open }) {
 
   function toggleSection(key) {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+    if (onRequestMainFocus) onRequestMainFocus();
   }
 
   function toggleNote(type, kind) {
@@ -164,36 +220,15 @@ export default function Sidebar({ t, options, onChangeOptions, open }) {
             <label className="field-label">
               {t.sidebar.fields.legatoFrequency}: <strong>{options.legatoFrequency ?? 50}%</strong>
             </label>
-            <div className="range-group">
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="10"
-                value={options.legatoFrequency ?? 50}
-                onChange={(e) => changeField('legatoFrequency', e.target.value)}
-              />
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="10"
-                value={options.legatoFrequency ?? 50}
-                onChange={(e) => changeField('legatoFrequency', e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="field-group">
-            <label className="field-label">
-              {t.sidebar.fields.noteGraphics}:
-              <select
-                value={options.noteGraphicsMode ?? 'svg'}
-                onChange={(e) => changeField('noteGraphicsMode', e.target.value)}
-              >
-                <option value="svg">SVG</option>
-                <option value="unicode">Unicode</option>
-              </select>
-            </label>
+            <NumericControl
+              value={options.legatoFrequency ?? 50}
+              min={0}
+              max={100}
+              step={10}
+              onChange={(next) => changeField('legatoFrequency', next)}
+              suffix="%"
+              ariaLabel={t.sidebar.fields.legatoFrequency}
+            />
           </div>
         </AccordionSection>
 
@@ -229,49 +264,92 @@ export default function Sidebar({ t, options, onChangeOptions, open }) {
           </div>
           <div className="field-group">
             <label className="field-label">{t.sidebar.fields.numberOfBars}</label>
-            <input
-              type="number"
-              min="1"
+            <NumericControl
               value={options.bars}
-              onChange={(e) => changeField('bars', parseInt(e.target.value, 10) || 1)}
+              min={1}
+              max={32}
+              step={1}
+              onChange={(next) => changeField('bars', next)}
+              ariaLabel={t.sidebar.fields.numberOfBars}
             />
           </div>
-        </AccordionSection>
-
-        <AccordionSection id="metronome" title={t.sidebar.sections.metronome} isOpen={expanded.metronome} onToggle={toggleSection}>
           <div className="field-group">
             <label className="field-label">
               {t.sidebar.fields.tempo}: <strong>{options.bpm ?? 60} BPM</strong>
             </label>
-            <div className="range-group">
-              <input
-                type="range"
-                min="30"
-                max="300"
-                step="1"
-                value={options.bpm ?? 60}
-                onChange={(e) => changeField('bpm', e.target.value)}
-              />
-              <input
-                type="number"
-                min="30"
-                max="300"
-                value={options.bpm ?? 60}
-                onChange={(e) => changeField('bpm', e.target.value)}
-              />
+            <NumericControl
+              value={options.bpm ?? 60}
+              min={30}
+              max={300}
+              step={1}
+              onChange={(next) => changeField('bpm', next)}
+              suffix=" BPM"
+              ariaLabel={t.sidebar.fields.tempo}
+            />
+          </div>
+        </AccordionSection>
+
+        <AccordionSection id="advancedSettings" title={t.sidebar.sections.advancedSettings} isOpen={expanded.advancedSettings} onToggle={toggleSection}>
+          <div className="advanced-checkbox-group">
+            <div className="field-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={options.showMovingProgressIndicator ?? true}
+                  onChange={(e) => changeField('showMovingProgressIndicator', e.target.checked)}
+                />
+                {t.sidebar.fields.movingProgress}
+              </label>
+            </div>
+
+            <div className="field-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={options.playRhythmSound ?? true}
+                  onChange={(e) => changeField('playRhythmSound', e.target.checked)}
+                />
+                {t.sidebar.fields.playRhythmSound}
+              </label>
+            </div>
+
+            <div className="field-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={options.showExpectedRhythmGrid ?? true}
+                  onChange={(e) => changeField('showExpectedRhythmGrid', e.target.checked)}
+                />
+                {t.sidebar.fields.expectedGrid}
+              </label>
+            </div>
+
+            <div className="field-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={options.useResponsiveBeatBoxWidth ?? true}
+                  onChange={(e) => changeField('useResponsiveBeatBoxWidth', e.target.checked)}
+                />
+                {t.sidebar.fields.useResponsiveBeatBoxWidth}
+              </label>
             </div>
           </div>
 
           <div className="field-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={options.showMovingProgressIndicator ?? true}
-                onChange={(e) => changeField('showMovingProgressIndicator', e.target.checked)}
-              />
-              {t.sidebar.fields.movingProgress}
+            <label className="field-label">
+              {t.sidebar.fields.noteGraphics}:
+              <select
+                value={options.noteGraphicsMode ?? 'svg'}
+                onChange={(e) => changeField('noteGraphicsMode', e.target.value)}
+              >
+                <option value="svg">SVG</option>
+                <option value="unicode">Unicode</option>
+              </select>
             </label>
           </div>
+
+          <div className="advanced-sound-group">
 
           <div className="field-group">
             <label className="field-label">{t.sidebar.fields.sound}</label>
@@ -289,118 +367,60 @@ export default function Sidebar({ t, options, onChangeOptions, open }) {
             <label className="field-label">
               {t.sidebar.fields.accentFreq}: <strong>{options.metronomeSound.accentFreq} Hz</strong>
             </label>
-            <div className="range-group">
-              <input
-                type="range"
-                min="200"
-                max="2000"
-                step="50"
-                value={options.metronomeSound.accentFreq}
-                onChange={(e) => changeSoundField('accentFreq', parseInt(e.target.value, 10))}
-              />
-              <input
-                type="number"
-                min="200"
-                max="2000"
-                value={options.metronomeSound.accentFreq}
-                onChange={(e) => changeSoundField('accentFreq', parseInt(e.target.value, 10) || 1500)}
-              />
-            </div>
+            <NumericControl
+              value={options.metronomeSound.accentFreq}
+              min={200}
+              max={2000}
+              step={50}
+              onChange={(next) => changeSoundField('accentFreq', next)}
+              suffix=" Hz"
+              ariaLabel={t.sidebar.fields.accentFreq}
+            />
           </div>
 
           <div className="field-group">
             <label className="field-label">
               {t.sidebar.fields.beatFreq}: <strong>{options.metronomeSound.beatFreq} Hz</strong>
             </label>
-            <div className="range-group">
-              <input
-                type="range"
-                min="200"
-                max="2000"
-                step="50"
-                value={options.metronomeSound.beatFreq}
-                onChange={(e) => changeSoundField('beatFreq', parseInt(e.target.value, 10))}
-              />
-              <input
-                type="number"
-                min="200"
-                max="2000"
-                value={options.metronomeSound.beatFreq}
-                onChange={(e) => changeSoundField('beatFreq', parseInt(e.target.value, 10) || 1000)}
-              />
-            </div>
+            <NumericControl
+              value={options.metronomeSound.beatFreq}
+              min={200}
+              max={2000}
+              step={50}
+              onChange={(next) => changeSoundField('beatFreq', next)}
+              suffix=" Hz"
+              ariaLabel={t.sidebar.fields.beatFreq}
+            />
           </div>
-        </AccordionSection>
-
-        <AccordionSection id="tappedRhythm" title={t.sidebar.sections.synchronization} isOpen={expanded.tappedRhythm} onToggle={toggleSection}>
-          <div className="field-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={options.playRhythmSound ?? true}
-                onChange={(e) => changeField('playRhythmSound', e.target.checked)}
-              />
-              {t.sidebar.fields.playRhythmSound}
-            </label>
           </div>
 
           <div className="field-group">
             <label className="field-label">
               {t.sidebar.fields.accuracyGrid}: <strong>{options.tappedRhythmAccuracy ?? 12}</strong>
             </label>
-            <div className="range-group">
-              <input
-                type="range"
-                min="4"
-                max="100"
-                step="4"
-                value={options.tappedRhythmAccuracy ?? 12}
-                onChange={(e) => changeField('tappedRhythmAccuracy', e.target.value)}
-              />
-              <input
-                type="number"
-                min="4"
-                max="100"
-                step="4"
-                value={options.tappedRhythmAccuracy ?? 12}
-                onChange={(e) => changeField('tappedRhythmAccuracy', e.target.value)}
-              />
-            </div>
+            <NumericControl
+              value={options.tappedRhythmAccuracy ?? 12}
+              min={4}
+              max={100}
+              step={4}
+              onChange={(next) => changeField('tappedRhythmAccuracy', next)}
+              ariaLabel={t.sidebar.fields.accuracyGrid}
+            />
           </div>
 
           <div className="field-group">
             <label className="field-label">
               {t.sidebar.fields.userTapSync}: <strong>{options.tappedRhythmSyncPercent ?? 0}%</strong>
             </label>
-            <div className="range-group">
-              <input
-                type="range"
-                min="-50"
-                max="50"
-                step="1"
-                value={options.tappedRhythmSyncPercent ?? 0}
-                onChange={(e) => changeField('tappedRhythmSyncPercent', e.target.value)}
-              />
-              <input
-                type="number"
-                min="-50"
-                max="50"
-                step="1"
-                value={options.tappedRhythmSyncPercent ?? 0}
-                onChange={(e) => changeField('tappedRhythmSyncPercent', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="field-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={options.showExpectedRhythmGrid ?? true}
-                onChange={(e) => changeField('showExpectedRhythmGrid', e.target.checked)}
-              />
-              {t.sidebar.fields.expectedGrid}
-            </label>
+            <NumericControl
+              value={options.tappedRhythmSyncPercent ?? 0}
+              min={-50}
+              max={50}
+              step={1}
+              onChange={(next) => changeField('tappedRhythmSyncPercent', next)}
+              suffix="%"
+              ariaLabel={t.sidebar.fields.userTapSync}
+            />
           </div>
         </AccordionSection>
 

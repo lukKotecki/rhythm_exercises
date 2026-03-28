@@ -8,6 +8,7 @@ export default function Header({
   onChangePage,
   sidebarOpen,
   onToggleSidebar,
+  onRequestMainFocus,
   onStart,
   onNext,
   onPause,
@@ -31,12 +32,22 @@ export default function Header({
     onChangeLanguage(language === 'en' ? 'pl' : 'en');
   }
 
+  function handleToggleSidebar() {
+    onToggleSidebar();
+    if (onRequestMainFocus) onRequestMainFocus();
+  }
+
+  function handleToggleMenu() {
+    setMenuOpen((o) => !o);
+    if (onRequestMainFocus) onRequestMainFocus();
+  }
+
   return (
     <header className="app-header">
       <div className="header-left">
         <button
           className={`menu-toggle${sidebarOpen ? ' active' : ''}`}
-          onClick={onToggleSidebar}
+          onClick={handleToggleSidebar}
           aria-label={t.menu.toggleSidebar}
           aria-pressed={sidebarOpen}
           title={t.menu.openSidebar}
@@ -61,7 +72,7 @@ export default function Header({
       <div className="header-right">
         <button
           className="menu-toggle"
-          onClick={() => setMenuOpen((o) => !o)}
+          onClick={handleToggleMenu}
           aria-label={t.menu.toggleMenu}
         >
           ☰
