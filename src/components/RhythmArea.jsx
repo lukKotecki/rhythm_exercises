@@ -9,10 +9,14 @@ function timeToSlot(offsetInBar, beatDuration, slotsPerBeat) {
 }
 
 const GROUP_PATTERNS = [
+  { name: 'triplet-eighth',            pattern: ['triplet-eighth', 'triplet-eighth', 'triplet-eighth'], requireFullBeat: true },
+  { name: 'triplet-quarter',           pattern: ['quarter-triplet', 'quarter-triplet', 'quarter-triplet'], requireFullBeat: true, requiredBeatBoxes: 2 },
   { name: 'four-sixteenth',             pattern: ['sixteenth', 'sixteenth', 'sixteenth', 'sixteenth'], requireFullBeat: true },
   { name: 'two-sixteenth-and-eighth',   pattern: ['sixteenth', 'sixteenth', 'eighth'], requireFullBeat: true },
   { name: 'eighth-and-two-sixteenth',   pattern: ['eighth', 'sixteenth', 'sixteenth'], requireFullBeat: true },
   { name: 'sixteenth-eighth-sixteenth', pattern: ['sixteenth', 'eighth', 'sixteenth'], requireFullBeat: true },
+  { name: 'dotted-eighth-sixteenth',    pattern: ['dotted-eighth', 'sixteenth'], requireFullBeat: true },
+  { name: 'sixteenth-dotted-eighth',    pattern: ['sixteenth', 'dotted-eighth'], requireFullBeat: true },
   { name: 'eighth-pair',                pattern: ['eighth', 'eighth'], requireFullBeat: true },
   { name: 'three-sixteenth',            pattern: ['sixteenth', 'sixteenth', 'sixteenth'], requireFullBeat: false },
   { name: 'two-sixteenth',              pattern: ['sixteenth', 'sixteenth'], requireFullBeat: false },
@@ -24,7 +28,7 @@ function groupNotesForRender(bar, beatValue) {
   let i = 0;
   while (i < bar.length) {
     let matched = false;
-    for (const { name, pattern, requireFullBeat } of GROUP_PATTERNS) {
+    for (const { name, pattern, requireFullBeat, requiredBeatBoxes = 1 } of GROUP_PATTERNS) {
       const len = pattern.length;
       if (i + len > bar.length) continue;
       const slice = bar.slice(i, i + len);
@@ -34,10 +38,10 @@ function groupNotesForRender(bar, beatValue) {
       const startsAtBeatBoundary = beatOffset <= 0.001 || beatValue - beatOffset <= 0.001;
       if (!startsAtBeatBoundary && requireFullBeat) continue;
 
-      const withinBeatBox = beatOffset + totalDur <= beatValue + 0.001;
-      if (!withinBeatBox) continue;
+      const withinRequiredSpan = beatOffset + totalDur <= beatValue * requiredBeatBoxes + 0.001;
+      if (!withinRequiredSpan) continue;
 
-      if (requireFullBeat && Math.abs(totalDur - beatValue) > 0.001) continue;
+      if (requireFullBeat && Math.abs(totalDur - beatValue * requiredBeatBoxes) > 0.001) continue;
       items.push({ type: 'group', name, duration: totalDur, accent: slice[0].accent });
       cumDur += totalDur;
       i += len;

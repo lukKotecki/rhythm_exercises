@@ -8,6 +8,43 @@ import Settings from './components/Settings.jsx';
 import { LANGUAGE_STORAGE_KEY, TRANSLATIONS } from './i18n.js';
 import './App.css';
 
+// Encode options object to base64 string for URL sharing
+function encodeSettingsToUrl(options) {
+  try {
+    const json = JSON.stringify(options);
+    return btoa(json);
+  } catch {
+    return null;
+  }
+}
+
+// Decode base64 string from URL back to options object
+function decodeSettingsFromUrl(encoded) {
+  try {
+    const json = atob(encoded);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+// Get settings from URL parameter if present
+function getSettingsFromUrlParam() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const settingsParam = params.get('settings');
+    if (settingsParam) {
+      const decoded = decodeSettingsFromUrl(settingsParam);
+      if (decoded && typeof decoded === 'object') {
+        return decoded;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const [language, setLanguage] = useState(() => {
@@ -21,7 +58,7 @@ function App() {
   });
   const t = TRANSLATIONS[language] || TRANSLATIONS.en;
 
-  // options state – loaded from localStorage, falls back to defaults
+  // options state – loaded from localStorage, URL params, or defaults
   const [options, setOptions] = useState(() => {
     const defaults = {
       noteValues: {
@@ -33,6 +70,8 @@ function App() {
         'dotted-eighth': true,
         eighth: true,
         sixteenth: true,
+        'triplet-eighth': false,
+        'quarter-triplet': false,
       },
       rests: {
         whole: false,
@@ -59,6 +98,20 @@ function App() {
       playRhythmSound: true,
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
     };
+
+    // First check if settings are in URL
+    const urlSettings = getSettingsFromUrlParam();
+    if (urlSettings) {
+      return {
+        ...defaults,
+        ...urlSettings,
+        noteValues: { ...defaults.noteValues, ...(urlSettings.noteValues || {}) },
+        rests: { ...defaults.rests, ...(urlSettings.rests || {}) },
+        metronomeSound: { ...defaults.metronomeSound, ...(urlSettings.metronomeSound || {}) },
+      };
+    }
+
+    // Otherwise load from localStorage
     try {
       const saved = localStorage.getItem('rhythmExercisesOptions');
       if (saved) {
@@ -145,7 +198,12 @@ function App() {
     // build list of possible notes and rests with their durations (in quarter-notes)
     const noteChoices = [];
     Object.entries(options.noteValues).forEach(([name, enabled]) => {
-      if (enabled) noteChoices.push({ type: 'note', name, duration: durationMap[name] });
+      if (!enabled) return;
+      if (name === 'quarter-triplet') {
+        noteChoices.push({ type: 'note', name, duration: (2 * beatValue) / 3 });
+        return;
+      }
+      noteChoices.push({ type: 'note', name, duration: durationMap[name] });
     });
     const restChoices = [];
     Object.entries(options.rests).forEach(([name, enabled]) => {
@@ -243,6 +301,21 @@ function App() {
     setFocusMainToken((prev) => prev + 1);
   }
 
+  function handleShareSettings() {
+    const encoded = encodeSettingsToUrl(options);
+    if (!encoded) return;
+
+    const url = `${window.location.origin}${window.location.pathname}?settings=${encoded}`;
+    try {
+      navigator.clipboard.writeText(url).then(() => {
+        alert(t.sidebar.fields.settingsCopiedToClipboard);
+      });
+    } catch {
+      // Fallback if clipboard API fails
+      alert(`${t.sidebar.fields.settingsCopiedToClipboard}\n\n${url}`);
+    }
+  }
+
   return (
     <div className="app-container">
       <Header
@@ -270,6 +343,7 @@ function App() {
             options={options}
             onChangeOptions={setOptions}
             onRequestMainFocus={handleRequestMainFocus}
+            onShareSettings={handleShareSettings}
             open={sidebarOpen}
           />
         )}
@@ -318,29 +392,59 @@ const durationMap = {
   'dotted-eighth': 0.75,
   eighth: 0.5,
   sixteenth: 0.25,
+  'triplet-eighth': 1 / 3,
+  'quarter-triplet': 2 / 3,
 };
 
 function approxEqual(a, b, epsilon = 0.0001) {
   return Math.abs(a - b) <= epsilon;
 }
 
-function getAvailableChoices(choices, sum, barDuration, beatValue) {
+function getAvailableChoices(choices, sum, barDuration, beatValue, path = []) {
   const epsilon = 0.0001;
   const remaining = barDuration - sum;
   const positionInBeat = sum % beatValue;
   const remainingInBeat = positionInBeat < epsilon ? beatValue : beatValue - positionInBeat;
+  const quarterTripletTailCount = countTrailingQuarterTriplets(path);
 
   return choices.filter((c) => {
     if (!Number.isFinite(c.duration) || c.duration <= 0) return false;
     if (c.duration > remaining + epsilon) return false;
+
+    if (c.name !== 'quarter-triplet' && quarterTripletTailCount % 3 !== 0) return false;
+
     const atBeatStart = positionInBeat <= epsilon;
     const atHalfBeat = Math.abs(positionInBeat - beatValue / 2) <= epsilon;
     const canStartOffBeat = c.name === 'dotted-quarter' && atHalfBeat;
+
+    if (c.name === 'quarter-triplet') {
+      const quarterTripletDuration = (2 * beatValue) / 3;
+      const tripletPhase = quarterTripletTailCount % 3;
+
+      if (tripletPhase === 0) {
+        if (!atBeatStart) return false;
+        if (remaining < 2 * beatValue - epsilon) return false;
+      }
+
+      if (tripletPhase === 1 && Math.abs(positionInBeat - quarterTripletDuration) > epsilon) return false;
+      if (tripletPhase === 2 && Math.abs(positionInBeat - beatValue / 3) > epsilon) return false;
+    }
+
     const mustStartOnBeatBox = c.duration >= 1;
     if (mustStartOnBeatBox && !(atBeatStart || canStartOffBeat)) return false;
+    if (c.name === 'quarter-triplet') return true;
     if (c.duration <= 1 && c.duration > remainingInBeat + epsilon) return false;
     return true;
   });
+}
+
+function countTrailingQuarterTriplets(path) {
+  let count = 0;
+  for (let i = path.length - 1; i >= 0; i -= 1) {
+    if (path[i]?.name !== 'quarter-triplet') break;
+    count += 1;
+  }
+  return count;
 }
 
 function shuffled(list) {
@@ -362,7 +466,7 @@ function buildExactBar(choices, barDuration, beatValue) {
     if (visited > maxNodes) return null;
     if (sum >= barDuration - epsilon) return path;
 
-    const available = shuffled(getAvailableChoices(choices, sum, barDuration, beatValue));
+    const available = shuffled(getAvailableChoices(choices, sum, barDuration, beatValue, path));
     for (const choice of available) {
       const result = dfs(sum + choice.duration, [...path, choice]);
       if (result) return result;
@@ -379,7 +483,7 @@ function buildGreedyBar(noteChoices, barDuration, beatValue) {
   let sum = 0;
 
   while (sum < barDuration - epsilon) {
-    const available = getAvailableChoices(noteChoices, sum, barDuration, beatValue);
+    const available = getAvailableChoices(noteChoices, sum, barDuration, beatValue, items);
     if (available.length === 0) break;
     const choice = available[Math.floor(Math.random() * available.length)];
     items.push(choice);

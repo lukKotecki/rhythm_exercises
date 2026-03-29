@@ -54,6 +54,8 @@ export const TRANSLATIONS = {
         expectedGrid: 'Show expected rhythm grid on progress bar',
         playRhythmSound: 'Play rhythm with me',
         useResponsiveBeatBoxWidth: 'Responsive beat-box width',
+        shareSettings: 'Share settings',
+        settingsCopiedToClipboard: 'Settings link copied to clipboard!',
       },
       noteNames: {
         whole: 'Whole',
@@ -64,6 +66,8 @@ export const TRANSLATIONS = {
         'dotted-eighth': 'Dotted eighth',
         eighth: 'Eighth',
         sixteenth: 'Sixteenth',
+        'triplet-eighth': 'Eighth triplet',
+        'quarter-triplet': 'Quarter-note triplet',
       },
       restNames: {
         whole: 'Whole rest',
@@ -139,6 +143,8 @@ export const TRANSLATIONS = {
         expectedGrid: 'Pokaz oczekiwana siatke rytmu na pasku postepu',
         playRhythmSound: 'Graj rytm ze mną',
         useResponsiveBeatBoxWidth: 'Responsywna szerokosc beat-boxow',
+        shareSettings: 'Udostępnij ustawienia',
+        settingsCopiedToClipboard: 'Link z ustawieniami skopiowany do schowka!',
       },
       noteNames: {
         whole: 'cała nuta',
@@ -149,6 +155,8 @@ export const TRANSLATIONS = {
         'dotted-eighth': 'ósemka z kropką',
         eighth: 'ósemka',
         sixteenth: 'szesnastka',
+        'triplet-eighth': 'triola ósemkowa',
+        'quarter-triplet': 'triola ćwierćnutowa',
       },
       restNames: {
         whole: 'pauza całonutowa',

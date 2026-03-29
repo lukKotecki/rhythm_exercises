@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 28">
+  <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="16" cy="20.5" rx="4.2" ry="3.1" fill="currentColor" />
+    <ellipse cx="52" cy="20.5" rx="4.2" ry="3.1" fill="currentColor" />
+    <ellipse cx="88" cy="20.5" rx="4.2" ry="3.1" fill="currentColor" />
+
+    <line x1="20" y1="20.5" x2="20" y2="7" />
+    <line x1="56" y1="20.5" x2="56" y2="7" />
+    <line x1="92" y1="20.5" x2="92" y2="7" />
+
+    <line x1="18" y1="4" x2="94" y2="4" />
+    <line x1="18" y1="4" x2="18" y2="7" />
+    <line x1="94" y1="4" x2="94" y2="7" />
+  </g>
+  <text x="56" y="3.5" text-anchor="middle" font-size="7.8" font-family="Arial, sans-serif" fill="currentColor">3</text>
+</svg>

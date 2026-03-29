@@ -92,8 +92,9 @@ function NumericControl({
   );
 }
 
-export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocus, open }) {
-  const noteNames = ['whole', 'dotted-half', 'half', 'dotted-quarter', 'quarter', 'dotted-eighth', 'eighth', 'sixteenth'];
+export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocus, onShareSettings, open }) {
+  const noteNames = ['whole', 'dotted-half', 'half', 'dotted-quarter', 'quarter', 'dotted-eighth', 'eighth', 'sixteenth', 'triplet-eighth', 'quarter-triplet'];
+  const restNames = ['whole', 'dotted-half', 'half', 'dotted-quarter', 'quarter', 'dotted-eighth', 'eighth', 'sixteenth'];
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
   const metronomeSounds = [
     { value: 'sine', label: 'Sine' },
@@ -233,7 +234,7 @@ export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocu
         </AccordionSection>
 
         <AccordionSection id="pauseValues" title={t.sidebar.sections.restValues} isOpen={expanded.pauseValues} onToggle={toggleSection}>
-          {noteNames.map((n) => (
+          {restNames.map((n) => (
             <label key={n}>
               <input
                 type="checkbox"
@@ -421,6 +422,27 @@ export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocu
               suffix="%"
               ariaLabel={t.sidebar.fields.userTapSync}
             />
+          </div>
+
+          <div className="field-group">
+            <button
+              type="button"
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                marginTop: '12px',
+              }}
+              onClick={() => onShareSettings && onShareSettings()}
+            >
+              {t.sidebar.fields.shareSettings}
+            </button>
           </div>
         </AccordionSection>
 
