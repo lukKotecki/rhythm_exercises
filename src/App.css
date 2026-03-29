@@ -949,6 +949,20 @@
   border-radius: 2px;
   transform: translateX(-50%);
   z-index: 3;
+  overflow: visible;
+}
+
+.tap-running-accuracy {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0.85;
+  letter-spacing: -0.01em;
 }
 
 .bar-expected-marker {

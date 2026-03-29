@@ -295,25 +295,65 @@ function calculateOverallTimingAccuracy(expectedTapTimes, userTapTimes, beatDura
 
   const expected = [...expectedTapTimes].sort((a, b) => a - b);
   const user = [...(userTapTimes || [])].sort((a, b) => a - b);
-  const pairCount = Math.min(expected.length, user.length);
   const toleranceSec = Math.max(0.06, (beatDurationSec || 1) * 0.45);
 
-  let distanceScore = 0;
-  for (let i = 0; i < pairCount; i++) {
-    const distance = Math.abs(user[i] - expected[i]);
-    const ratio = Math.min(1, distance / toleranceSec);
-    const normalized = Math.max(0, 1 - ratio ** 1.35);
-    distanceScore += normalized;
+  // Greedy local matching prevents one early/late tap from shifting all later pairs.
+  // Matched taps contribute timing quality; missed/extra events contribute 0 equally.
+  let i = 0;
+  let j = 0;
+  let matchedScoreSum = 0;
+  let matchedCount = 0;
+  let missedCount = 0;
+  let extraCount = 0;
+
+  while (i < expected.length && j < user.length) {
+    const diff = user[j] - expected[i];
+    const distance = Math.abs(diff);
+
+    if (distance <= toleranceSec) {
+      const ratio = Math.min(1, distance / toleranceSec);
+      const normalized = Math.max(0, 1 - ratio ** 1.35);
+      matchedScoreSum += normalized;
+      matchedCount += 1;
+      i += 1;
+      j += 1;
+      continue;
+    }
+
+    if (user[j] < expected[i]) {
+      extraCount += 1;
+      j += 1;
+    } else {
+      missedCount += 1;
+      i += 1;
+    }
   }
-  const distanceAvg = pairCount > 0 ? distanceScore / pairCount : 0;
 
-  const coverageScore = pairCount / expected.length;
-  const extraTaps = Math.max(0, user.length - expected.length);
-  const extraPenaltyScore = Math.max(0, 1 - extraTaps / expected.length);
+  if (i < expected.length) missedCount += expected.length - i;
+  if (j < user.length) extraCount += user.length - j;
 
-  const combinedScore = distanceAvg * 0.75 + coverageScore * 0.2 + extraPenaltyScore * 0.05;
+  const totalEvents = matchedCount + missedCount + extraCount;
+  if (totalEvents <= 0) return 0;
+  const combinedScore = matchedScoreSum / totalEvents;
   const pct = Math.round(Math.max(0, Math.min(1, combinedScore)) * 100);
   return pct;
+}
+
+function getAverageEligibleTapTimes(rawTapTimes, expectedTapTimes, timingMap, userTapSyncPercent) {
+  const expected = Array.isArray(expectedTapTimes) ? expectedTapTimes : [];
+  const beatDuration = timingMap?.beatDuration || 1;
+  const barEnds = timingMap?.barEnds || [];
+  const slotsPerBeat = timingMap?.slotsPerBeat || 12;
+  const warmupEndTime = barEnds[0] ?? 0;
+  const userTapSyncDelaySec = beatDuration * ((userTapSyncPercent ?? 10) / 100);
+  const slotDurationSec = beatDuration / slotsPerBeat;
+  const scoringToleranceSec = Math.max(0.06, beatDuration * 0.45);
+  const boundaryToleranceSec = Math.max(slotDurationSec * 2, scoringToleranceSec);
+  const firstExpectedAtBarStart = expected[0] !== undefined && Math.abs(expected[0] - warmupEndTime) <= 0.001;
+
+  return (rawTapTimes || [])
+    .map((tap) => tap + userTapSyncDelaySec)
+    .filter((tap) => tap >= warmupEndTime || (firstExpectedAtBarStart && tap >= warmupEndTime - boundaryToleranceSec));
 }
 
 export default function RhythmArea({
@@ -329,6 +369,7 @@ export default function RhythmArea({
   focusMainToken = 0,
   showMovingProgressIndicator = true,
   showExpectedRhythmGrid,
+  showTapRunningAccuracyUnderTap = true,
   useResponsiveBeatBoxWidth = true,
   metronomeSound,
   bpm = 60,
@@ -348,6 +389,8 @@ export default function RhythmArea({
   const [barAccuracy, setBarAccuracy] = useState([]);
   // expected slots that were not hit exactly (used for blue markers)
   const [missingExpectedByBar, setMissingExpectedByBar] = useState([]);
+  // running cumulative accuracy per tap index (null if not yet computable)
+  const [tapRunningAccuracies, setTapRunningAccuracies] = useState([]);
   const [overallAccuracyPct, setOverallAccuracyPct] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -457,6 +500,7 @@ export default function RhythmArea({
     setTapAssessments([]);
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
+    setTapRunningAccuracies([]);
     setOverallAccuracyPct(null);
     setShowConfetti(false);
     rewardShownRef.current = false;
@@ -747,6 +791,26 @@ export default function RhythmArea({
     setTapAssessments(assessments);
     setBarAccuracy(accRows);
     setMissingExpectedByBar(missingByBar);
+
+    // Compute running cumulative accuracy for each tap (excluding warmup bar)
+    const { beatDuration: bd } = timingMapRef.current;
+    const effectiveBeatDuration = bd || 1;
+    const allExpected = expectedTapTimesRef.current;
+    const runningAccuracies = [];
+    tappedRhythm.forEach((_, ti) => {
+      const exerciseTapsSoFar = getAverageEligibleTapTimes(
+        tappedRhythm.slice(0, ti + 1),
+        allExpected,
+        timingMapRef.current,
+        userTapSyncPercent,
+      );
+      if (allExpected.length === 0 || exerciseTapsSoFar.length === 0) {
+        runningAccuracies[ti] = null;
+      } else {
+        runningAccuracies[ti] = calculateOverallTimingAccuracy(allExpected, exerciseTapsSoFar, effectiveBeatDuration);
+      }
+    });
+    setTapRunningAccuracies(runningAccuracies);
   }, [tappedRhythm, barsData, userTapSyncPercent]);
 
   useEffect(() => {
@@ -853,6 +917,7 @@ export default function RhythmArea({
     setTapAssessments([]);
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
+    setTapRunningAccuracies([]);
     setOverallAccuracyPct(null);
     setShowConfetti(false);
     setElapsed(0);
@@ -873,16 +938,14 @@ export default function RhythmArea({
       return;
     }
 
-    const { beatDuration, barEnds, slotsPerBeat } = timingMapRef.current;
+    const { beatDuration } = timingMapRef.current;
     const effectiveBeatDuration = beatDuration || 1;
-    const userTapSyncDelaySec = beatDuration * ((userTapSyncPercent ?? 10) / 100);
-    const warmupEndTime = barEnds[0] ?? 0;
-    const slotDurationSec = effectiveBeatDuration / (slotsPerBeat || 12);
-    const boundaryToleranceSec = slotDurationSec;
-    const firstExpectedAtBarStart = expected[0] !== undefined && Math.abs(expected[0] - warmupEndTime) <= 0.001;
-    const adjustedTaps = tappedRhythm
-      .map((tap) => tap + userTapSyncDelaySec)
-      .filter((tap) => tap >= warmupEndTime || (firstExpectedAtBarStart && tap >= warmupEndTime - boundaryToleranceSec));
+    const adjustedTaps = getAverageEligibleTapTimes(
+      tappedRhythm,
+      expected,
+      timingMapRef.current,
+      userTapSyncPercent,
+    );
 
     if (adjustedTaps.length === 0) {
       setOverallAccuracyPct(0);
@@ -1118,12 +1181,19 @@ export default function RhythmArea({
                     let color = '#ef4444';
                     if (assessment?.status === 'good') color = '#22c55e';
                     else if (assessment?.status === 'near') color = '#9ca3af';
+                    const runningAcc = tapRunningAccuracies[ti];
                     return (
                       <span
                         key={ti}
                         className="bar-click-marker"
                         style={{ left: `${pct}%`, background: color }}
-                      />
+                      >
+                        {showTapRunningAccuracyUnderTap !== false && runningAcc !== null && runningAcc !== undefined && (
+                          <span className="tap-running-accuracy" style={{ color }}>
+                            {runningAcc}%
+                          </span>
+                        )}
+                      </span>
                     );
                   })}
                   {showMovingProgressIndicator !== false && running && i === currentBar && (

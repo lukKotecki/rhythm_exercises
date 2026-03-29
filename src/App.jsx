@@ -37,6 +37,7 @@ function App() {
       tappedRhythmSyncPercent: 0,
       showMovingProgressIndicator: true,
       showExpectedRhythmGrid: true,
+      showTapRunningAccuracyUnderTap: true,
       useResponsiveBeatBoxWidth: true,
       playRhythmSound: true,
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
@@ -283,6 +284,7 @@ function App() {
               focusMainToken={focusMainToken}
               showMovingProgressIndicator={options.showMovingProgressIndicator}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
+              showTapRunningAccuracyUnderTap={options.showTapRunningAccuracyUnderTap}
               useResponsiveBeatBoxWidth={options.useResponsiveBeatBoxWidth}
               metronomeSound={options.metronomeSound}
               bpm={options.bpm}

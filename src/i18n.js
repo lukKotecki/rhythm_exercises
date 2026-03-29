@@ -54,6 +54,7 @@ export const TRANSLATIONS = {
         expectedGrid: 'Show expected rhythm grid on progress bar',
         playRhythmSound: 'Play rhythm with me',
         useResponsiveBeatBoxWidth: 'Responsive beat-box width',
+        showTapRunningAccuracyUnderTap: 'Show average accuracy under each tap',
       },
       noteNames: {
         whole: 'Whole',
@@ -133,6 +134,7 @@ export const TRANSLATIONS = {
         expectedGrid: 'Pokaz oczekiwana siatke rytmu na pasku postepu',
         playRhythmSound: 'Graj rytm ze mną',
         useResponsiveBeatBoxWidth: 'Responsywna szerokosc beat-boxow',
+        showTapRunningAccuracyUnderTap: 'Pokaż średnią dokładność pod uderzeniem',
       },
       noteNames: {
         whole: 'cała nuta',

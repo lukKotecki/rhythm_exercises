@@ -334,6 +334,17 @@ export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocu
                 {t.sidebar.fields.useResponsiveBeatBoxWidth}
               </label>
             </div>
+
+            <div className="field-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={options.showTapRunningAccuracyUnderTap ?? true}
+                  onChange={(e) => changeField('showTapRunningAccuracyUnderTap', e.target.checked)}
+                />
+                {t.sidebar.fields.showTapRunningAccuracyUnderTap}
+              </label>
+            </div>
           </div>
 
           <div className="field-group">
