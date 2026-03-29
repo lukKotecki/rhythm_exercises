@@ -367,6 +367,32 @@ function getAverageEligibleTapTimes(rawTapTimes, expectedTapTimes, timingMap, us
     .filter((tap) => tap >= warmupEndTime || (firstExpectedAtBarStart && tap >= warmupEndTime - boundaryToleranceSec));
 }
 
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+// Color wheel gradient: 0% violet(280) → 40% red(360) → 75% yellow(60) → 100% green(120)
+// Hue travels clockwise: 280→360 (violet→pink→red), 0→60 (red→orange→yellow), 60→120 (yellow→green)
+function getSessionAccuracyColor(pct) {
+  const clamped = Math.max(0, Math.min(100, Math.round(pct ?? 0)));
+  let hue;
+
+  if (clamped <= 40) {
+    const t = clamped / 40;
+    hue = lerp(280, 360, t);   // violet → red (clockwise through pink)
+  } else if (clamped <= 75) {
+    const t = (clamped - 40) / 35;
+    hue = lerp(0, 60, t);      // red → orange → yellow
+  } else {
+    const t = (clamped - 75) / 25;
+    hue = lerp(60, 120, t);    // yellow → yellow-green → green
+  }
+
+  const sat = lerp(78, 88, clamped / 100);
+  const light = lerp(44, 52, clamped / 100);
+  return `hsl(${hue} ${sat}% ${light}%)`;
+}
+
 export default function RhythmArea({
   t,
   barsData,
@@ -381,6 +407,7 @@ export default function RhythmArea({
   showMovingProgressIndicator = true,
   showExpectedRhythmGrid,
   useResponsiveBeatBoxWidth = true,
+  settingsResetToken,
   metronomeSound,
   bpm = 60,
   playRhythmSound = true,
@@ -400,6 +427,7 @@ export default function RhythmArea({
   // expected slots that were not hit exactly (used for blue markers)
   const [missingExpectedByBar, setMissingExpectedByBar] = useState([]);
   const [overallAccuracyPct, setOverallAccuracyPct] = useState(null);
+  const [sessionAccuracyHistory, setSessionAccuracyHistory] = useState([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const audioCtx = useRef(null);
@@ -416,6 +444,7 @@ export default function RhythmArea({
   const calibrationSentRef = useRef(false);
   const finishedNaturallyRef = useRef(false);
   const rewardShownRef = useRef(false);
+  const recordedRunRef = useRef(false);
   const confettiHideTimerRef = useRef(null);
   const [currentBeat, setCurrentBeat] = useState(-1);
   const [currentBar, setCurrentBar] = useState(-1);
@@ -515,7 +544,13 @@ export default function RhythmArea({
     rhythmPlayIndexRef.current = 0;
     lastAudioElapsedRef.current = 0;
     playRhythmSoundRef.current = playRhythmSound;
+    recordedRunRef.current = false;
   }, [barsData, timeSignature, tappedRhythmAccuracy, bpm, legatoEnabled, legatoFrequency, playRhythmSound]);
+
+  useEffect(() => {
+    setSessionAccuracyHistory([]);
+    recordedRunRef.current = false;
+  }, [settingsResetToken]);
 
   async function ensureAudioReady() {
     if (!audioCtx.current) {
@@ -913,6 +948,7 @@ export default function RhythmArea({
     finishedNaturallyRef.current = false;
     rewardShownRef.current = false;
     calibrationSentRef.current = false;
+    recordedRunRef.current = false;
   }, [repeatToken, barsData.length]);
 
   useEffect(() => {
@@ -936,11 +972,19 @@ export default function RhythmArea({
 
     if (adjustedTaps.length === 0) {
       setOverallAccuracyPct(0);
+      if (!recordedRunRef.current) {
+        setSessionAccuracyHistory((prev) => [...prev, 0]);
+        recordedRunRef.current = true;
+      }
       return;
     }
 
     const overallPct = calculateOverallTimingAccuracy(expected, adjustedTaps, effectiveBeatDuration);
     setOverallAccuracyPct(overallPct);
+    if (!recordedRunRef.current && overallPct !== null) {
+      setSessionAccuracyHistory((prev) => [...prev, overallPct]);
+      recordedRunRef.current = true;
+    }
   }, [elapsed, totalDuration, running, tappedRhythm, userTapSyncPercent]);
 
   useEffect(() => {
@@ -1232,6 +1276,21 @@ export default function RhythmArea({
       {overallAccuracyPct !== null && !running && elapsed >= totalDuration && (
         <div className="overall-accuracy-summary" role="status" aria-live="polite">
           {t.rhythm.averageAccuracy}: <strong>{overallAccuracyPct}%</strong>
+
+          {sessionAccuracyHistory.length > 0 && (
+            <div className="session-accuracy-grid" aria-label={t.rhythm.sessionAccuracyHistory}>
+              {sessionAccuracyHistory.map((score, idx) => (
+                <span
+                  key={`session-acc-${idx}`}
+                  className="session-accuracy-square"
+                  style={{ backgroundColor: getSessionAccuracyColor(score) }}
+                  title={`${score}%`}
+                >
+                  {score}%
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

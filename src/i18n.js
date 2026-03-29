@@ -93,6 +93,7 @@ export const TRANSLATIONS = {
       emptyState: 'Press Start to generate rhythm.',
       barLine: 'Bar {index}: tapped rhythm {pct}% ({matched}/{expected})',
       averageAccuracy: 'Average accuracy',
+      sessionAccuracyHistory: 'Session average accuracy history',
     },
   },
   pl: {
@@ -182,6 +183,7 @@ export const TRANSLATIONS = {
       emptyState: 'Nacisnij Start, aby wygenerowac rytm.',
       barLine: 'Takt {index}: rytm {pct}% ({matched}/{expected})',
       averageAccuracy: 'Srednia dokladnosc',
+      sessionAccuracyHistory: 'Historia sredniej dokladnosci w sesji',
     },
   },
 };

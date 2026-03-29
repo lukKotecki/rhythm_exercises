@@ -144,6 +144,7 @@ function App() {
   const [focusMainToken, setFocusMainToken] = useState(0);
   const [exerciseMode, setExerciseMode] = useState('normal');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const settingsResetToken = JSON.stringify(options);
 
   function generateBars(mode = 'normal') {
     if (mode === 'delay-calibration') {
@@ -363,6 +364,7 @@ function App() {
               showMovingProgressIndicator={options.showMovingProgressIndicator}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
               useResponsiveBeatBoxWidth={options.useResponsiveBeatBoxWidth}
+              settingsResetToken={settingsResetToken}
               metronomeSound={options.metronomeSound}
               bpm={options.bpm}
               playRhythmSound={options.playRhythmSound}
