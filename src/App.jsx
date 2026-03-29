@@ -24,8 +24,26 @@ function App() {
   // options state – loaded from localStorage, falls back to defaults
   const [options, setOptions] = useState(() => {
     const defaults = {
-      noteValues: { whole: true, half: true, quarter: true, eighth: true, sixteenth: true },
-      rests: { whole: false, half: false, quarter: false, eighth: false, sixteenth: false },
+      noteValues: {
+        whole: true,
+        'dotted-half': true,
+        half: true,
+        'dotted-quarter': true,
+        quarter: true,
+        'dotted-eighth': true,
+        eighth: true,
+        sixteenth: true,
+      },
+      rests: {
+        whole: false,
+        'dotted-half': false,
+        half: false,
+        'dotted-quarter': false,
+        quarter: false,
+        'dotted-eighth': false,
+        eighth: false,
+        sixteenth: false,
+      },
       legato: false,
       legatoFrequency: 50,
       noteGraphicsMode: 'svg',
@@ -37,7 +55,6 @@ function App() {
       tappedRhythmSyncPercent: 0,
       showMovingProgressIndicator: true,
       showExpectedRhythmGrid: true,
-      showTapRunningAccuracyUnderTap: true,
       useResponsiveBeatBoxWidth: true,
       playRhythmSound: true,
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
@@ -49,6 +66,8 @@ function App() {
         return {
           ...defaults,
           ...parsed,
+          noteValues: { ...defaults.noteValues, ...(parsed.noteValues || {}) },
+          rests: { ...defaults.rests, ...(parsed.rests || {}) },
           metronomeSound: { ...defaults.metronomeSound, ...(parsed.metronomeSound || {}) },
         };
       }
@@ -124,55 +143,40 @@ function App() {
     }
 
     // build list of possible notes and rests with their durations (in quarter-notes)
-    const choices = [];
+    const noteChoices = [];
     Object.entries(options.noteValues).forEach(([name, enabled]) => {
-      if (enabled) choices.push({ type: 'note', name, duration: durationMap[name] });
+      if (enabled) noteChoices.push({ type: 'note', name, duration: durationMap[name] });
     });
+    const restChoices = [];
     Object.entries(options.rests).forEach(([name, enabled]) => {
-      if (enabled) choices.push({ type: 'rest', name, duration: durationMap[name] });
+      if (enabled) restChoices.push({ type: 'rest', name, duration: durationMap[name] });
     });
+    const choices = [...noteChoices, ...restChoices];
 
     const bars = [];
     for (let i = 0; i < options.bars; i++) {
-      const bar = [];
-
       const barDuration = beatsPerBar * beatValue;
-      let sum = 0;
       const epsilon = 0.0001;
+      let bar = buildExactBar(choices, barDuration, beatValue);
 
-      // Fill the whole bar with randomly selected values that fit remaining time.
-      // This allows larger note values (e.g. half/whole) to be generated when selected.
-      while (sum < barDuration - epsilon) {
-        const remaining = barDuration - sum;
-        const positionInBeat = sum % beatValue;
-        const remainingInBeat =
-          positionInBeat < epsilon ? beatValue : beatValue - positionInBeat;
-
-        const available = choices.filter((c) => {
-          if (c.duration > remaining + epsilon) return false;
-          const mustStartOnBeatBox =
-            c.name === 'quarter' || c.name === 'half' || c.name === 'whole';
-          if (mustStartOnBeatBox && positionInBeat > epsilon) return false;
-          // quarter and smaller values must stay inside one beat-box
-          if (c.duration <= 1 && c.duration > remainingInBeat + epsilon) return false;
-          return true;
-        });
-
-        if (available.length === 0) {
-          break;
-        }
-
-        const choice = available[Math.floor(Math.random() * available.length)];
-        const noteObj = {
-          ...choice,
-          value: choice.name,
-          accent: bar.length === 0, // accent first note in the bar
-        };
-        bar.push(noteObj);
-        sum += choice.duration;
+      if (!bar) {
+        // Auto-fill with rests only as a fallback when exact generation is impossible.
+        const partial = buildGreedyBar(noteChoices, barDuration, beatValue);
+        appendRestsToFillBar(partial.items, partial.sum, barDuration, beatValue);
+        bar = partial.items;
       }
 
-      bars.push(combineAdjacentRestsInBeatBox(bar, beatValue));
+      const withMeta = bar.map((item, idx) => ({
+        ...item,
+        value: item.name,
+        accent: idx === 0,
+      }));
+
+      if (withMeta.reduce((acc, n) => acc + n.duration, 0) < barDuration - epsilon) {
+        appendRestsToFillBar(withMeta, withMeta.reduce((acc, n) => acc + n.duration, 0), barDuration, beatValue);
+      }
+
+      bars.push(combineAdjacentRestsInBeatBox(withMeta, beatValue));
     }
 
     // insert a warm-up bar at start
@@ -284,7 +288,6 @@ function App() {
               focusMainToken={focusMainToken}
               showMovingProgressIndicator={options.showMovingProgressIndicator}
               showExpectedRhythmGrid={options.showExpectedRhythmGrid}
-              showTapRunningAccuracyUnderTap={options.showTapRunningAccuracyUnderTap}
               useResponsiveBeatBoxWidth={options.useResponsiveBeatBoxWidth}
               metronomeSound={options.metronomeSound}
               bpm={options.bpm}
@@ -308,7 +311,9 @@ function App() {
 
 const durationMap = {
   whole: 4,
+  'dotted-half': 3,
   half: 2,
+  'dotted-quarter': 1.5,
   quarter: 1,
   'dotted-eighth': 0.75,
   eighth: 0.5,
@@ -317,6 +322,111 @@ const durationMap = {
 
 function approxEqual(a, b, epsilon = 0.0001) {
   return Math.abs(a - b) <= epsilon;
+}
+
+function getAvailableChoices(choices, sum, barDuration, beatValue) {
+  const epsilon = 0.0001;
+  const remaining = barDuration - sum;
+  const positionInBeat = sum % beatValue;
+  const remainingInBeat = positionInBeat < epsilon ? beatValue : beatValue - positionInBeat;
+
+  return choices.filter((c) => {
+    if (!Number.isFinite(c.duration) || c.duration <= 0) return false;
+    if (c.duration > remaining + epsilon) return false;
+    const atBeatStart = positionInBeat <= epsilon;
+    const atHalfBeat = Math.abs(positionInBeat - beatValue / 2) <= epsilon;
+    const canStartOffBeat = c.name === 'dotted-quarter' && atHalfBeat;
+    const mustStartOnBeatBox = c.duration >= 1;
+    if (mustStartOnBeatBox && !(atBeatStart || canStartOffBeat)) return false;
+    if (c.duration <= 1 && c.duration > remainingInBeat + epsilon) return false;
+    return true;
+  });
+}
+
+function shuffled(list) {
+  const arr = [...list];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildExactBar(choices, barDuration, beatValue) {
+  const epsilon = 0.0001;
+  const maxNodes = 12000;
+  let visited = 0;
+
+  function dfs(sum, path) {
+    visited += 1;
+    if (visited > maxNodes) return null;
+    if (sum >= barDuration - epsilon) return path;
+
+    const available = shuffled(getAvailableChoices(choices, sum, barDuration, beatValue));
+    for (const choice of available) {
+      const result = dfs(sum + choice.duration, [...path, choice]);
+      if (result) return result;
+    }
+    return null;
+  }
+
+  return dfs(0, []);
+}
+
+function buildGreedyBar(noteChoices, barDuration, beatValue) {
+  const epsilon = 0.0001;
+  const items = [];
+  let sum = 0;
+
+  while (sum < barDuration - epsilon) {
+    const available = getAvailableChoices(noteChoices, sum, barDuration, beatValue);
+    if (available.length === 0) break;
+    const choice = available[Math.floor(Math.random() * available.length)];
+    items.push(choice);
+    sum += choice.duration;
+  }
+
+  return { items, sum };
+}
+
+const REST_FILL_CHOICES = [
+  { name: 'whole', duration: 4 },
+  { name: 'dotted-half', duration: 3 },
+  { name: 'half', duration: 2 },
+  { name: 'dotted-quarter', duration: 1.5 },
+  { name: 'quarter', duration: 1 },
+  { name: 'dotted-eighth', duration: 0.75 },
+  { name: 'eighth', duration: 0.5 },
+  { name: 'sixteenth', duration: 0.25 },
+];
+
+function appendRestsToFillBar(bar, startSum, barDuration, beatValue) {
+  const epsilon = 0.0001;
+  let sum = startSum;
+
+  while (sum < barDuration - epsilon) {
+    const remaining = barDuration - sum;
+    const positionInBeat = sum % beatValue;
+    const remainingInBeat = positionInBeat < epsilon ? beatValue : beatValue - positionInBeat;
+
+    const choice = REST_FILL_CHOICES.find((c) =>
+      c.duration <= remaining + epsilon && c.duration <= remainingInBeat + epsilon,
+    );
+
+    if (!choice) {
+      // Safety fallback to avoid infinite loop with floating-point edge cases.
+      const fallback = REST_FILL_CHOICES[REST_FILL_CHOICES.length - 1];
+      if (fallback.duration > remaining + epsilon || fallback.duration > remainingInBeat + epsilon) {
+        break;
+      }
+      bar.push({ type: 'rest', name: fallback.name, value: fallback.name, duration: fallback.duration, accent: false });
+      sum += fallback.duration;
+      continue;
+    }
+
+    bar.push({ type: 'rest', name: choice.name, value: choice.name, duration: choice.duration, accent: false });
+    sum += choice.duration;
+  }
 }
 
 function restNameForDuration(duration) {

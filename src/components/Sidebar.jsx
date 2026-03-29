@@ -93,7 +93,7 @@ function NumericControl({
 }
 
 export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocus, open }) {
-  const noteNames = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
+  const noteNames = ['whole', 'dotted-half', 'half', 'dotted-quarter', 'quarter', 'dotted-eighth', 'eighth', 'sixteenth'];
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
   const metronomeSounds = [
     { value: 'sine', label: 'Sine' },
@@ -161,7 +161,7 @@ export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocu
     }
     if (field === 'bpm') {
       const parsed = parseInt(value, 10);
-      const bounded = Number.isNaN(parsed) ? 60 : Math.max(30, Math.min(300, parsed));
+      const bounded = Number.isNaN(parsed) ? 60 : Math.max(30, Math.min(200, parsed));
       onChangeOptions({ ...options, bpm: bounded });
       return;
     }
@@ -280,7 +280,7 @@ export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocu
             <NumericControl
               value={options.bpm ?? 60}
               min={30}
-              max={300}
+              max={200}
               step={1}
               onChange={(next) => changeField('bpm', next)}
               suffix=" BPM"
@@ -332,17 +332,6 @@ export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocu
                   onChange={(e) => changeField('useResponsiveBeatBoxWidth', e.target.checked)}
                 />
                 {t.sidebar.fields.useResponsiveBeatBoxWidth}
-              </label>
-            </div>
-
-            <div className="field-group">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={options.showTapRunningAccuracyUnderTap ?? true}
-                  onChange={(e) => changeField('showTapRunningAccuracyUnderTap', e.target.checked)}
-                />
-                {t.sidebar.fields.showTapRunningAccuracyUnderTap}
               </label>
             </div>
           </div>

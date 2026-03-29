@@ -9,11 +9,13 @@ function timeToSlot(offsetInBar, beatDuration, slotsPerBeat) {
 }
 
 const GROUP_PATTERNS = [
-  { name: 'eighth-pair',                pattern: ['eighth', 'eighth'] },
-  { name: 'two-sixteenth-and-eighth',   pattern: ['sixteenth', 'sixteenth', 'eighth'] },
-  { name: 'eighth-and-two-sixteenth',   pattern: ['eighth', 'sixteenth', 'sixteenth'] },
-  { name: 'four-sixteenth',             pattern: ['sixteenth', 'sixteenth', 'sixteenth', 'sixteenth'] },
-  { name: 'sixteenth-eighth-sixteenth', pattern: ['sixteenth', 'eighth', 'sixteenth'] },
+  { name: 'four-sixteenth',             pattern: ['sixteenth', 'sixteenth', 'sixteenth', 'sixteenth'], requireFullBeat: true },
+  { name: 'two-sixteenth-and-eighth',   pattern: ['sixteenth', 'sixteenth', 'eighth'], requireFullBeat: true },
+  { name: 'eighth-and-two-sixteenth',   pattern: ['eighth', 'sixteenth', 'sixteenth'], requireFullBeat: true },
+  { name: 'sixteenth-eighth-sixteenth', pattern: ['sixteenth', 'eighth', 'sixteenth'], requireFullBeat: true },
+  { name: 'eighth-pair',                pattern: ['eighth', 'eighth'], requireFullBeat: true },
+  { name: 'three-sixteenth',            pattern: ['sixteenth', 'sixteenth', 'sixteenth'], requireFullBeat: false },
+  { name: 'two-sixteenth',              pattern: ['sixteenth', 'sixteenth'], requireFullBeat: false },
 ];
 
 function groupNotesForRender(bar, beatValue) {
@@ -22,15 +24,20 @@ function groupNotesForRender(bar, beatValue) {
   let i = 0;
   while (i < bar.length) {
     let matched = false;
-    for (const { name, pattern } of GROUP_PATTERNS) {
+    for (const { name, pattern, requireFullBeat } of GROUP_PATTERNS) {
       const len = pattern.length;
       if (i + len > bar.length) continue;
       const slice = bar.slice(i, i + len);
       if (slice.some((n, j) => n.type !== 'note' || n.name !== pattern[j])) continue;
       const totalDur = slice.reduce((s, n) => s + n.duration, 0);
-      if (Math.abs(totalDur - beatValue) > 0.001) continue;
       const beatOffset = cumDur % beatValue;
-      if (beatOffset > 0.001 && beatValue - beatOffset > 0.001) continue;
+      const startsAtBeatBoundary = beatOffset <= 0.001 || beatValue - beatOffset <= 0.001;
+      if (!startsAtBeatBoundary && requireFullBeat) continue;
+
+      const withinBeatBox = beatOffset + totalDur <= beatValue + 0.001;
+      if (!withinBeatBox) continue;
+
+      if (requireFullBeat && Math.abs(totalDur - beatValue) > 0.001) continue;
       items.push({ type: 'group', name, duration: totalDur, accent: slice[0].accent });
       cumDur += totalDur;
       i += len;
@@ -369,7 +376,6 @@ export default function RhythmArea({
   focusMainToken = 0,
   showMovingProgressIndicator = true,
   showExpectedRhythmGrid,
-  showTapRunningAccuracyUnderTap = true,
   useResponsiveBeatBoxWidth = true,
   metronomeSound,
   bpm = 60,
@@ -389,8 +395,6 @@ export default function RhythmArea({
   const [barAccuracy, setBarAccuracy] = useState([]);
   // expected slots that were not hit exactly (used for blue markers)
   const [missingExpectedByBar, setMissingExpectedByBar] = useState([]);
-  // running cumulative accuracy per tap index (null if not yet computable)
-  const [tapRunningAccuracies, setTapRunningAccuracies] = useState([]);
   const [overallAccuracyPct, setOverallAccuracyPct] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -500,7 +504,6 @@ export default function RhythmArea({
     setTapAssessments([]);
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
-    setTapRunningAccuracies([]);
     setOverallAccuracyPct(null);
     setShowConfetti(false);
     rewardShownRef.current = false;
@@ -792,25 +795,6 @@ export default function RhythmArea({
     setBarAccuracy(accRows);
     setMissingExpectedByBar(missingByBar);
 
-    // Compute running cumulative accuracy for each tap (excluding warmup bar)
-    const { beatDuration: bd } = timingMapRef.current;
-    const effectiveBeatDuration = bd || 1;
-    const allExpected = expectedTapTimesRef.current;
-    const runningAccuracies = [];
-    tappedRhythm.forEach((_, ti) => {
-      const exerciseTapsSoFar = getAverageEligibleTapTimes(
-        tappedRhythm.slice(0, ti + 1),
-        allExpected,
-        timingMapRef.current,
-        userTapSyncPercent,
-      );
-      if (allExpected.length === 0 || exerciseTapsSoFar.length === 0) {
-        runningAccuracies[ti] = null;
-      } else {
-        runningAccuracies[ti] = calculateOverallTimingAccuracy(allExpected, exerciseTapsSoFar, effectiveBeatDuration);
-      }
-    });
-    setTapRunningAccuracies(runningAccuracies);
   }, [tappedRhythm, barsData, userTapSyncPercent]);
 
   useEffect(() => {
@@ -917,7 +901,6 @@ export default function RhythmArea({
     setTapAssessments([]);
     setBarAccuracy([]);
     setMissingExpectedByBar([]);
-    setTapRunningAccuracies([]);
     setOverallAccuracyPct(null);
     setShowConfetti(false);
     setElapsed(0);
@@ -1181,19 +1164,12 @@ export default function RhythmArea({
                     let color = '#ef4444';
                     if (assessment?.status === 'good') color = '#22c55e';
                     else if (assessment?.status === 'near') color = '#9ca3af';
-                    const runningAcc = tapRunningAccuracies[ti];
                     return (
                       <span
                         key={ti}
                         className="bar-click-marker"
                         style={{ left: `${pct}%`, background: color }}
-                      >
-                        {showTapRunningAccuracyUnderTap !== false && runningAcc !== null && runningAcc !== undefined && (
-                          <span className="tap-running-accuracy" style={{ color }}>
-                            {runningAcc}%
-                          </span>
-                        )}
-                      </span>
+                      />
                     );
                   })}
                   {showMovingProgressIndicator !== false && running && i === currentBar && (
