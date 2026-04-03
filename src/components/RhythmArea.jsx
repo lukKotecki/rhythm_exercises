@@ -411,11 +411,18 @@ export default function RhythmArea({
   metronomeSound,
   bpm = 60,
   playRhythmSound = true,
+  showBarAccuracy = false,
+  showAccuracyOnProgress = false,
   exerciseMode,
   running,
   pausedElapsed = 0,
+  loadedResults,
+  sessionHeaderClickHistory = [],
   onElapsedChange,
   onPause,
+  onSessionRecorded,
+  onUpdateResults,
+  onShareResults,
   onCalibrationComplete,
 }) {
   // tapped rhythm: array of timestamps (seconds) when user clicked/pressed space
@@ -856,6 +863,13 @@ export default function RhythmArea({
     }
   }, [running, exerciseMode, elapsed, totalDuration, tappedRhythm, onCalibrationComplete]);
 
+  // Update parent with results whenever they change
+  useEffect(() => {
+    if (onUpdateResults) {
+      onUpdateResults(barAccuracy, overallAccuracyPct, sessionAccuracyHistory);
+    }
+  }, [barAccuracy, overallAccuracyPct, onUpdateResults, sessionAccuracyHistory]);
+
   // stop metronome when component unmounts
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -974,6 +988,7 @@ export default function RhythmArea({
       setOverallAccuracyPct(0);
       if (!recordedRunRef.current) {
         setSessionAccuracyHistory((prev) => [...prev, 0]);
+        if (onSessionRecorded) onSessionRecorded();
         recordedRunRef.current = true;
       }
       return;
@@ -983,9 +998,10 @@ export default function RhythmArea({
     setOverallAccuracyPct(overallPct);
     if (!recordedRunRef.current && overallPct !== null) {
       setSessionAccuracyHistory((prev) => [...prev, overallPct]);
+      if (onSessionRecorded) onSessionRecorded();
       recordedRunRef.current = true;
     }
-  }, [elapsed, totalDuration, running, tappedRhythm, userTapSyncPercent]);
+  }, [elapsed, totalDuration, running, tappedRhythm, userTapSyncPercent, onSessionRecorded]);
 
   useEffect(() => {
     if (!finishedNaturallyRef.current || rewardShownRef.current) return;
@@ -1187,6 +1203,14 @@ export default function RhythmArea({
                   ))}
                 </div>
                 <div className="bar-progress" style={{ width: responsiveBarWidthStr }}>
+                  {showAccuracyOnProgress && barAccuracy.length > 0 && (() => {
+                    const barAccRow = barAccuracy.find((row) => row.barIndex === i);
+                    return barAccRow ? (
+                      <span className="bar-accuracy-label" style={{ position: 'absolute', top: '-20px', left: '0', fontSize: '12px', fontWeight: 'bold' }}>
+                        {barAccRow.accuracyPct}%
+                      </span>
+                    ) : null;
+                  })()}
                   {showMovingProgressIndicator !== false && (
                     <div
                       className="bar-progress-fill"
@@ -1232,7 +1256,7 @@ export default function RhythmArea({
           });})()}
         </div>
       )}
-      {barAccuracy.length > 0 && (
+      {showBarAccuracy && barAccuracy.length > 0 && (
         <div className="results">
           {barAccuracy.map((row) => (
             <div
@@ -1246,6 +1270,52 @@ export default function RhythmArea({
                 .replace('{expected}', row.expected)}
             </div>
           ))}
+        </div>
+      )}
+      {loadedResults && (
+        <div className="loaded-results-section">
+          {loadedResults.overallAccuracy !== null && (
+            <div className="overall-accuracy-summary" role="status" aria-live="polite">
+              {t.rhythm.averageAccuracy}: <strong>{loadedResults.overallAccuracy}%</strong>
+
+              {Array.isArray(loadedResults.sessionAccuracyHistory) && loadedResults.sessionAccuracyHistory.length > 0 && (
+                <div className="session-accuracy-grid" aria-label={t.rhythm.sessionAccuracyHistory}>
+                  {loadedResults.sessionAccuracyHistory.map((score, idx) => (
+                    <span
+                      key={`shared-session-acc-${idx}`}
+                      className="session-accuracy-square"
+                      style={{ backgroundColor: getSessionAccuracyColor(score) }}
+                      title={`${score}%`}
+                    >
+                      {score}%
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {Array.isArray(loadedResults.sessionHeaderClickHistory) && loadedResults.sessionHeaderClickHistory.length > 0 && (
+                <div style={{ marginTop: '10px', fontSize: '12px', textAlign: 'left' }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '6px' }}>{t.rhythm.sessionButtonClicksTitle}</div>
+                  {loadedResults.sessionHeaderClickHistory.map((row, idx) => (
+                    <div key={`shared-session-clicks-${idx}`}>
+                      {t.rhythm.sessionButtonClicksLine
+                        .replace('{index}', idx + 1)
+                        .replace('{generate}', row.generate ?? 0)
+                        .replace('{next}', row.next ?? 0)
+                        .replace('{start}', row.start ?? 0)
+                        .replace('{repeat}', row.repeat ?? 0)
+                        .replace('{stop}', row.stop ?? 0)}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {loadedResults.timestamp && (
+            <p style={{ marginTop: '12px', fontSize: '12px', color: '#666', textAlign: 'center' }}>
+              {new Date(loadedResults.timestamp).toLocaleString()}
+            </p>
+          )}
         </div>
       )}
       {showConfetti && (
@@ -1291,6 +1361,28 @@ export default function RhythmArea({
               ))}
             </div>
           )}
+
+          {onShareResults && (
+            <button
+              type="button"
+              style={{
+                marginTop: '12px',
+                width: '100%',
+                padding: '8px 12px',
+                backgroundColor: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '14px',
+              }}
+              onClick={onShareResults}
+            >
+              {t.sidebar.fields.shareResults}
+            </button>
+          )}
+
         </div>
       )}
 

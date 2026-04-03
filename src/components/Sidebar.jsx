@@ -92,7 +92,7 @@ function NumericControl({
   );
 }
 
-export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocus, onShareSettings, open }) {
+export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocus, onShareSettings, onShareResults, open }) {
   const noteNames = ['whole', 'dotted-half', 'half', 'dotted-quarter', 'quarter', 'dotted-eighth', 'eighth', 'sixteenth', 'triplet-eighth', 'quarter-triplet'];
   const restNames = ['whole', 'dotted-half', 'half', 'dotted-quarter', 'quarter', 'dotted-eighth', 'eighth', 'sixteenth'];
   const timeSigs = ['2/4', '3/4', '4/4', '3/8', '6/8'];
@@ -335,6 +335,28 @@ export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocu
                 {t.sidebar.fields.useResponsiveBeatBoxWidth}
               </label>
             </div>
+
+            <div className="field-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={options.showBarAccuracy ?? false}
+                  onChange={(e) => changeField('showBarAccuracy', e.target.checked)}
+                />
+                {t.sidebar.fields.showBarAccuracy}
+              </label>
+            </div>
+
+            <div className="field-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={options.showAccuracyOnProgress ?? false}
+                  onChange={(e) => changeField('showAccuracyOnProgress', e.target.checked)}
+                />
+                {t.sidebar.fields.showAccuracyOnProgress}
+              </label>
+            </div>
           </div>
 
           <div className="field-group">
@@ -438,6 +460,7 @@ export default function Sidebar({ t, options, onChangeOptions, onRequestMainFocu
                 fontWeight: 'bold',
                 fontSize: '14px',
                 marginTop: '12px',
+                marginBottom: '8px',
               }}
               onClick={() => onShareSettings && onShareSettings()}
             >

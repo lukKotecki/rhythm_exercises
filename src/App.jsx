@@ -8,6 +8,14 @@ import Settings from './components/Settings.jsx';
 import { LANGUAGE_STORAGE_KEY, TRANSLATIONS } from './i18n.js';
 import './App.css';
 
+const EMPTY_SESSION_CLICK_COUNTS = {
+  generate: 0,
+  next: 0,
+  start: 0,
+  repeat: 0,
+  stop: 0,
+};
+
 // Encode options object to base64 string for URL sharing
 function encodeSettingsToUrl(options) {
   try {
@@ -36,6 +44,22 @@ function getSettingsFromUrlParam() {
     if (settingsParam) {
       const decoded = decodeSettingsFromUrl(settingsParam);
       if (decoded && typeof decoded === 'object') {
+        return decoded;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function getResultsFromUrlParam() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const resultsParam = params.get('results');
+    if (resultsParam) {
+      const decoded = decodeSettingsFromUrl(resultsParam);
+      if (decoded && typeof decoded === 'object' && Array.isArray(decoded.results)) {
         return decoded;
       }
     }
@@ -96,18 +120,22 @@ function App() {
       showExpectedRhythmGrid: true,
       useResponsiveBeatBoxWidth: true,
       playRhythmSound: true,
+      showBarAccuracy: false,
+      showAccuracyOnProgress: false,
       metronomeSound: { waveform: 'sine', accentFreq: 1500, beatFreq: 1000 },
     };
 
-    // First check if settings are in URL
-    const urlSettings = getSettingsFromUrlParam();
-    if (urlSettings) {
+    const resultsPayload = getResultsFromUrlParam();
+    const sourceSettings = resultsPayload?.options || getSettingsFromUrlParam();
+
+    // First check if settings are in URL or embedded in shared results.
+    if (sourceSettings) {
       return {
         ...defaults,
-        ...urlSettings,
-        noteValues: { ...defaults.noteValues, ...(urlSettings.noteValues || {}) },
-        rests: { ...defaults.rests, ...(urlSettings.rests || {}) },
-        metronomeSound: { ...defaults.metronomeSound, ...(urlSettings.metronomeSound || {}) },
+        ...sourceSettings,
+        noteValues: { ...defaults.noteValues, ...(sourceSettings.noteValues || {}) },
+        rests: { ...defaults.rests, ...(sourceSettings.rests || {}) },
+        metronomeSound: { ...defaults.metronomeSound, ...(sourceSettings.metronomeSound || {}) },
       };
     }
 
@@ -144,9 +172,71 @@ function App() {
   const [focusMainToken, setFocusMainToken] = useState(0);
   const [exerciseMode, setExerciseMode] = useState('normal');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [barAccuracyData, setBarAccuracyData] = useState([]);
+  const [overallAccuracyData, setOverallAccuracyData] = useState(null);
+  const [sessionAccuracyHistoryData, setSessionAccuracyHistoryData] = useState([]);
+  const [currentSessionClickCounts, setCurrentSessionClickCounts] = useState(EMPTY_SESSION_CLICK_COUNTS);
+  const [sessionHeaderClickHistory, setSessionHeaderClickHistory] = useState([]);
+  const [generateClickCount, setGenerateClickCount] = useState(0);
+  const [exerciseAttempts, setExerciseAttempts] = useState([]);
+  const [currentAttemptIndex, setCurrentAttemptIndex] = useState(-1);
+  const [currentAttemptStarted, setCurrentAttemptStarted] = useState(false);
+  const [loadedResults, setLoadedResults] = useState(() => getResultsFromUrlParam());
   const settingsResetToken = JSON.stringify(options);
 
-  function generateBars(mode = 'normal') {
+  useEffect(() => {
+    setSessionHeaderClickHistory([]);
+    setCurrentSessionClickCounts(EMPTY_SESSION_CLICK_COUNTS);
+  }, [settingsResetToken]);
+
+  function resetSessionShareStats() {
+    setGenerateClickCount(0);
+    setExerciseAttempts([]);
+    setCurrentAttemptIndex(-1);
+    setCurrentAttemptStarted(false);
+  }
+
+  function incrementHeaderClickCount(key) {
+    setCurrentSessionClickCounts((prev) => ({
+      ...prev,
+      [key]: (prev[key] || 0) + 1,
+    }));
+  }
+
+  function finalizeSessionClickStats() {
+    setSessionHeaderClickHistory((prev) => [...prev, currentSessionClickCounts]);
+    setCurrentSessionClickCounts(EMPTY_SESSION_CLICK_COUNTS);
+  }
+
+  function registerAttempt({ autoStarted = false, countGenerateClick = false } = {}) {
+    if (countGenerateClick) {
+      setGenerateClickCount((prev) => prev + 1);
+    }
+    setExerciseAttempts((prev) => [...prev, { attemptNumber: prev.length + 1, repeatCount: 0 }]);
+    setCurrentAttemptIndex(exerciseAttempts.length);
+    setCurrentAttemptStarted(autoStarted);
+  }
+
+  function incrementCurrentAttemptRepeat() {
+    if (currentAttemptIndex < 0) return;
+    setExerciseAttempts((prev) => prev.map((attempt, idx) => (
+      idx === currentAttemptIndex
+        ? { ...attempt, repeatCount: attempt.repeatCount + 1 }
+        : attempt
+    )));
+  }
+
+  function generateBars(mode = 'normal', trackingOptions = {}) {
+    if (loadedResults) {
+      setLoadedResults(null);
+      resetSessionShareStats();
+    }
+    setBarAccuracyData([]);
+    setOverallAccuracyData(null);
+    setSessionAccuracyHistoryData([]);
+    if (mode === 'normal') {
+      registerAttempt(trackingOptions);
+    }
     if (mode === 'delay-calibration') {
       const beatValue = 1;
       const beatsPerBar = 4;
@@ -257,7 +347,11 @@ function App() {
     setExerciseMode('normal');
     // If no bars yet, generate them on first start.
     if (barsData.length === 0) {
-      generateBars('normal');
+      generateBars('normal', { autoStarted: true });
+    } else if (currentAttemptStarted) {
+      incrementCurrentAttemptRepeat();
+    } else {
+      setCurrentAttemptStarted(true);
     }
     // Start behaves like Repeat: always restart from the beginning.
     setRepeatToken((prev) => prev + 1);
@@ -265,9 +359,23 @@ function App() {
     setRunning(true);
   }
 
+  function handleHeaderStartClick() {
+    if (running) {
+      incrementHeaderClickCount('repeat');
+    } else {
+      incrementHeaderClickCount('start');
+    }
+    handleStart();
+  }
+
   function handlePause() {
     // Pause playback but keep generated rhythm and paused time
     setRunning(false);
+  }
+
+  function handleHeaderStopClick() {
+    incrementHeaderClickCount('stop');
+    handlePause();
   }
 
   function handleReset() {
@@ -276,7 +384,12 @@ function App() {
     setRunning(false);
     setPausedElapsed(0);
     setExerciseMode('normal');
-    generateBars('normal');
+    generateBars('normal', { autoStarted: false, countGenerateClick: true });
+  }
+
+  function handleHeaderGenerateClick() {
+    incrementHeaderClickCount('generate');
+    handleReset();
   }
 
   function handleNext() {
@@ -285,8 +398,13 @@ function App() {
     setExerciseMode('normal');
     setPausedElapsed(0);
     setRepeatToken((prev) => prev + 1);
-    generateBars('normal');
+    generateBars('normal', { autoStarted: true });
     setRunning(true);
+  }
+
+  function handleHeaderNextClick() {
+    incrementHeaderClickCount('next');
+    handleNext();
   }
 
   function handleElapsedChange(nextElapsed) {
@@ -317,6 +435,38 @@ function App() {
     }
   }
 
+  function handleShareResults() {
+    if (overallAccuracyData === null) {
+      alert(t.sidebar.fields.noResultsToShare || 'No results to share.');
+      return;
+    }
+
+    // Create a results summary to include in the URL
+    const resultsSummary = {
+      options,
+      results: barAccuracyData,
+      overallAccuracy: overallAccuracyData,
+      sessionAccuracyHistory: sessionAccuracyHistoryData,
+      sessionHeaderClickHistory,
+      generateClickCount,
+      exerciseAttempts,
+      timestamp: new Date().toISOString(),
+    };
+
+    const encoded = encodeSettingsToUrl(resultsSummary);
+    if (!encoded) return;
+
+    const url = `${window.location.origin}${window.location.pathname}?results=${encoded}`;
+    try {
+      navigator.clipboard.writeText(url).then(() => {
+        alert(t.sidebar.fields.resultsCopiedToClipboard);
+      });
+    } catch {
+      // Fallback if clipboard API fails
+      alert(`${t.sidebar.fields.resultsCopiedToClipboard}\n\n${url}`);
+    }
+  }
+
   return (
     <div className="app-container">
       <Header
@@ -331,10 +481,10 @@ function App() {
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((o) => !o)}
         onRequestMainFocus={handleRequestMainFocus}
-        onStart={handleStart}
-        onNext={handleNext}
-        onPause={handlePause}
-        onReset={handleReset}
+        onStart={handleHeaderStartClick}
+        onNext={handleHeaderNextClick}
+        onPause={handleHeaderStopClick}
+        onReset={handleHeaderGenerateClick}
         running={running}
       />
       <div className="content-wrap">
@@ -345,6 +495,7 @@ function App() {
             onChangeOptions={setOptions}
             onRequestMainFocus={handleRequestMainFocus}
             onShareSettings={handleShareSettings}
+            onShareResults={handleShareResults}
             open={sidebarOpen}
           />
         )}
@@ -368,11 +519,22 @@ function App() {
               metronomeSound={options.metronomeSound}
               bpm={options.bpm}
               playRhythmSound={options.playRhythmSound}
+              showBarAccuracy={options.showBarAccuracy}
+              showAccuracyOnProgress={options.showAccuracyOnProgress}
               exerciseMode={exerciseMode}
               running={running}
               pausedElapsed={pausedElapsed}
+              loadedResults={loadedResults}
+              sessionHeaderClickHistory={sessionHeaderClickHistory}
               onElapsedChange={handleElapsedChange}
               onPause={handlePause}
+              onSessionRecorded={finalizeSessionClickStats}
+              onUpdateResults={(barAccuracy, overallAccuracy, sessionAccuracyHistory) => {
+                setBarAccuracyData(barAccuracy);
+                setOverallAccuracyData(overallAccuracy);
+                setSessionAccuracyHistoryData(sessionAccuracyHistory);
+              }}
+              onShareResults={handleShareResults}
               onCalibrationComplete={handleCalibrationComplete}
             />
           )}
