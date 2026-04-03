@@ -1,6 +1,9 @@
 ﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <ellipse cx="8.6" cy="16.1" rx="4.6" ry="3.4" transform="rotate(-22 8.6 16.1)" fill="currentColor" stroke="currentColor" stroke-width="1.6"/>
-  <line x1="13" y1="15" x2="13" y2="3.5" stroke="currentColor" stroke-width="1.8"/>
-  <path d="M13 3.5 C17 4.2 18.1 6.2 15.2 8.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M13 7 C17 7.7 18.1 9.7 15.2 11.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-</svg>
+   <g>
+  <title>Layer 1</title>
+  <ellipse cx="9.74504" cy="15.94733" rx="3.50547" ry="2.52493" fill="currentColor" stroke-width="1.6" id="svg_1" transform="rotate(-22 9.74504 15.9473)" stroke="currentColor"/>
+  <line x1="13" y1="15" x2="13" y2="1.66794" stroke-width="1.8" id="svg_2" stroke="currentColor"/>
+  <path stroke="currentColor" d="m13.0625,1.62596c8.47623,1.6497 10.80719,6.36314 4.66193,10.84091" fill="none" stroke-width="1.8" stroke-linecap="round" id="svg_3"/>
+  <path d="m13.0625,5.62593c6.38945,1.16465 8.14655,4.49223 3.5142,7.65343" fill="none" stroke-width="1.8" stroke-linecap="round" id="svg_4" stroke="currentColor"/>
+ </g>
+ </svg>

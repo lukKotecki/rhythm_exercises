@@ -1,11 +1,16 @@
 ﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 24">
-  <ellipse cx="14" cy="18.5" rx="3.5" ry="2.6" transform="rotate(-18 14 18.5)" fill="currentColor"/>
-  <ellipse cx="60" cy="18.5" rx="3.8" ry="2.8" transform="rotate(-18 60 18.5)" fill="currentColor"/>
-  <ellipse cx="106" cy="18.5" rx="3.5" ry="2.6" transform="rotate(-18 106 18.5)" fill="currentColor"/>
-  <line x1="17.3" y1="16" x2="17.3" y2="3.5" stroke="currentColor" stroke-width="1.5"/>
-  <line x1="63.3" y1="16" x2="63.3" y2="3.5" stroke="currentColor" stroke-width="1.7"/>
-  <line x1="109.3" y1="16" x2="109.3" y2="3.5" stroke="currentColor" stroke-width="1.5"/>
-  <rect x="17.3" y="3.5" width="92" height="2.2" fill="currentColor"/>
-  <rect x="17.3" y="6.7" width="22" height="2.0" fill="currentColor"/>
-  <rect x="89.3" y="6.7" width="20" height="2.0" fill="currentColor"/>
+  
+  <g>
+  <title>Layer 1</title>
+  <ellipse transform="rotate(-18 14.4456 18.525)" stroke="null" id="svg_1" fill="currentColor" ry="2.88039" rx="3.87745" cy="18.52503" cx="14.44563"/>
+  <ellipse transform="rotate(-18 48.2031 19.1097)" stroke="null" id="svg_2" fill="currentColor" ry="3.06389" rx="4.15814" cy="19.10968" cx="48.20306"/>
+  <ellipse transform="rotate(-18 106.024 18.2555)" stroke="null" id="svg_3" fill="currentColor" ry="3.05702" rx="4.11521" cy="18.25547" cx="106.02366"/>
+  <line stroke="currentColor" id="svg_4" stroke-width="1.5" y2="3.5" x2="17.3" y1="17.37497" x1="17.3"/>
+  <line stroke="currentColor" id="svg_5" stroke-width="1.7" y2="4.24999" x2="51.42523" y1="19.12494" x1="51.42523"/>
+  <line stroke="currentColor" id="svg_6" stroke-width="1.5" y2="3.5" x2="109.3" y1="17.62497" x1="109.3"/>
+  <rect id="svg_7" fill="currentColor" height="2.2" width="92" y="3.5" x="17.3"/>
+  <rect id="svg_8" fill="currentColor" height="2" width="22" y="6.7" x="17.3"/>
+  <rect id="svg_9" fill="currentColor" height="2" width="20" y="6.7" x="89.3"/>
+ </g>
+
 </svg>

@@ -1,10 +1,15 @@
 ﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 24">
-  <ellipse cx="20" cy="18.5" rx="3.8" ry="2.8" transform="rotate(-18 20 18.5)" fill="currentColor"/>
-  <ellipse cx="60" cy="18.5" rx="3.8" ry="2.8" transform="rotate(-18 60 18.5)" fill="currentColor"/>
-  <ellipse cx="100" cy="18.5" rx="3.8" ry="2.8" transform="rotate(-18 100 18.5)" fill="currentColor"/>
-  <line x1="23.3" y1="16" x2="23.3" y2="6.0" stroke="currentColor" stroke-width="1.7"/>
-  <line x1="63.3" y1="16" x2="63.3" y2="6.0" stroke="currentColor" stroke-width="1.7"/>
-  <line x1="103.3" y1="16" x2="103.3" y2="6.0" stroke="currentColor" stroke-width="1.7"/>
-  <rect x="23.3" y="6.0" width="80" height="2.2" fill="currentColor"/>
-  <text x="60" y="4.2" text-anchor="middle" font-size="4" font-weight="bold" font-family="Georgia,serif" fill="currentColor">3</text>
+
+ <g>
+  <title>Layer 1</title>
+  <ellipse transform="rotate(-18 20.148 18.0084)" stroke="null" id="svg_1" fill="currentColor" ry="3.25443" rx="4.41672" cy="18.00839" cx="20.14803"/>
+  <ellipse transform="rotate(-18 60.2654 18.4224)" stroke="null" id="svg_2" fill="currentColor" ry="3.18106" rx="4.31716" cy="18.4224" cx="60.2654"/>
+  <path id="svg_3" d="m98.5856,21.56769c-2.52803,0 -4.57573,-1.50883 -4.57573,-3.37159c0,-1.86276 2.0477,-3.37159 4.57573,-3.37159c2.52803,0 4.57573,1.50883 4.57573,3.37159c0,1.86276 -2.0477,3.37159 -4.57573,3.37159z" transform="rotate(-18 98.5856 18.1961)" opacity="undefined" fill="currentColor"/>
+  <line stroke="currentColor" id="svg_4" stroke-width="1.7" y2="6.5" x2="23.425" y1="17.75" x1="23.425"/>
+  <line stroke="currentColor" id="svg_5" stroke-width="1.7" y2="7.125" x2="63.425" y1="17.875" x1="63.425"/>
+  <line stroke="currentColor" id="svg_6" stroke-width="1.7" y2="6.625" x2="102.05" y1="17.25" x1="102.05"/>
+  <rect id="svg_7" fill="currentColor" height="2.2" width="80" y="6.5" x="22.925"/>
+  <text id="svg_8" fill="currentColor" font-family="'Cabin'" font-weight="bold" font-size="8" text-anchor="middle" y="5.95" x="62.75">3</text>
+ </g>
+
 </svg>

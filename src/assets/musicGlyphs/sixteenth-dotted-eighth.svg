@@ -1,9 +1,15 @@
 ﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 24">
-  <ellipse cx="24" cy="18.5" rx="3.5" ry="2.6" transform="rotate(-18 24 18.5)" fill="currentColor"/>
-  <ellipse cx="100" cy="18.5" rx="3.8" ry="2.8" transform="rotate(-18 100 18.5)" fill="currentColor"/>
-  <circle cx="107" cy="17.5" r="1.6" fill="currentColor"/>
-  <line x1="27.3" y1="16" x2="27.3" y2="3.5" stroke="currentColor" stroke-width="1.5"/>
-  <line x1="103.3" y1="16" x2="103.3" y2="3.5" stroke="currentColor" stroke-width="1.7"/>
-  <rect x="27.3" y="3.5" width="76" height="2.2" fill="currentColor"/>
-  <rect x="27.3" y="6.7" width="18" height="2.0" fill="currentColor"/>
+  
+   <g>
+  <title>Layer 1</title>
+  <ellipse transform="rotate(-18 24.0058 18.3782)" stroke="null" id="svg_1" fill="currentColor" ry="3.25245" rx="4.3783" cy="18.3782" cx="24.00577"/>
+  <ellipse transform="rotate(-18 59.3847 18.4002)" stroke="null" id="svg_2" fill="currentColor" ry="3.32448" rx="4.51179" cy="18.40021" cx="59.3847"/>
+  <circle id="svg_3" fill="currentColor" r="1.6" cy="17.875" cx="67.12493"/>
+  <line stroke="currentColor" id="svg_4" stroke-width="1.5" y2="3.625" x2="27.3" y1="17.375" x1="27.3"/>
+  <line stroke="currentColor" id="svg_5" stroke-width="1.7" y2="3.625" x2="63.04993" y1="17.75" x1="63.04993"/>
+  <rect stroke="null" id="svg_6" fill="currentColor" height="2.2" width="36.49993" y="3.5" x="27.3"/>
+  <rect id="svg_7" fill="currentColor" height="2" width="18" y="6.7" x="27.3"/>
+ </g>
+
+
 </svg>
