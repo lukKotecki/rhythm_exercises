@@ -889,12 +889,6 @@
   opacity: 0.5;
 }
 
-/* accent markers on first note of each bar */
-.note.accent {
-  font-weight: bold;
-  color: #fbbf24;
-}
-
 /* visual marker at start of every bar */
 .accent-marker {
   margin-right: 0.2rem;

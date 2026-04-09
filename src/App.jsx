@@ -271,10 +271,16 @@ function App() {
 
     // determine beats per bar from the numerator of timeSignature
     let beatsPerBar = 4;
+    let isSixEightMeter = false;
     if (options.timeSignature) {
-      const [numStr] = options.timeSignature.split('/');
+      const [numStr, denomStr] = options.timeSignature.split('/');
       const n = parseInt(numStr, 10);
+      const d = parseInt(denomStr, 10);
       if (!isNaN(n)) beatsPerBar = n;
+      if (!isNaN(d) && n !== 6) {
+        // already parsed below for 6/8
+      }
+      isSixEightMeter = n === 6 && d === 8;
     }
 
     // determine beat value (duration of one beat in quarter-notes) from denominator
@@ -315,10 +321,25 @@ function App() {
         bar = partial.items;
       }
 
+      let accentPositions = new Set([0]);
+      if (isSixEightMeter) {
+        const accentBeatStarts = [0, 3 * beatValue];
+        let cursor = 0;
+        accentPositions = new Set();
+        let nextBeatIdx = 0;
+        for (let i = 0; i < bar.length; i++) {
+          if (nextBeatIdx < accentBeatStarts.length && Math.abs(cursor - accentBeatStarts[nextBeatIdx]) < 0.0001) {
+            accentPositions.add(i);
+            nextBeatIdx += 1;
+          }
+          cursor += bar[i].duration;
+        }
+        if (accentPositions.size === 0) accentPositions.add(0);
+      }
       const withMeta = bar.map((item, idx) => ({
         ...item,
         value: item.name,
-        accent: idx === 0,
+        accent: accentPositions.has(idx),
       }));
 
       if (withMeta.reduce((acc, n) => acc + n.duration, 0) < barDuration - epsilon) {
@@ -330,13 +351,14 @@ function App() {
 
     // insert a warm-up bar at start
     const emptyBar = [];
+    const accentBeats = isSixEightMeter ? new Set([0, 3]) : new Set([0]);
     for (let beat = 0; beat < beatsPerBar; beat++) {
       emptyBar.push({
         type: 'rest',
         name: 'quarter',
         duration: beatValue,
         value: '',
-        accent: beat === 0,
+        accent: accentBeats.has(beat),
       });
     }
     setBarsData([emptyBar, ...bars]);
@@ -535,6 +557,7 @@ function App() {
                 setSessionAccuracyHistoryData(sessionAccuracyHistory);
               }}
               onShareResults={handleShareResults}
+              onNext={handleHeaderNextClick}
               onCalibrationComplete={handleCalibrationComplete}
             />
           )}

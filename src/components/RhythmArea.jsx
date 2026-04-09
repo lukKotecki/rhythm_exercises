@@ -423,6 +423,7 @@ export default function RhythmArea({
   onSessionRecorded,
   onUpdateResults,
   onShareResults,
+  onNext,
   onCalibrationComplete,
 }) {
   // tapped rhythm: array of timestamps (seconds) when user clicked/pressed space
@@ -618,12 +619,14 @@ export default function RhythmArea({
     // determine beats per bar and beat value from timeSignature
     let beatsPerBar = 4;
     let beatValue = 1;
+    let isSixEightMeter = false;
     if (timeSignature) {
       const [numStr, denomStr] = timeSignature.split('/');
       const n = parseInt(numStr, 10);
       const d = parseInt(denomStr, 10);
       if (!isNaN(n)) beatsPerBar = n;
       if (!isNaN(d)) beatValue = 4 / d;
+      isSixEightMeter = n === 6 && d === 8;
     }
     // scale by 60/bpm so that at 60 BPM one beat = 1 s, at 80 BPM = 0.75 s, etc.
     const beatIntervalSec = beatValue * (60 / bpm);
@@ -646,7 +649,8 @@ export default function RhythmArea({
       if (startToken !== startTokenRef.current) return;
       const scheduleLookAheadSec = 0.12;
       while (beat < totalBeats && nextBeatAudioTime <= ctx.currentTime + scheduleLookAheadSec) {
-        const isAccent = beat % beatsPerBar === 0;
+        const beatInBar = beat % beatsPerBar;
+        const isAccent = isSixEightMeter ? (beatInBar === 0 || beatInBar === 3) : (beatInBar === 0);
         playMetronomeClick(ctx, metronomeSound, isAccent, nextBeatAudioTime);
         beat += 1;
         nextBeatAudioTime += beatIntervalSec;
@@ -1006,9 +1010,39 @@ export default function RhythmArea({
   useEffect(() => {
     if (!finishedNaturallyRef.current || rewardShownRef.current) return;
     if (barAccuracy.length === 0) return;
+    
+    // Check for perfect run (all 100%)
     const isPerfectRun = barAccuracy.every((row) => row.accuracyPct === 100);
-    if (!isPerfectRun) return;
-
+    if (isPerfectRun) {
+      rewardShownRef.current = true;
+      setShowConfetti(true);
+      if (confettiHideTimerRef.current) {
+        clearTimeout(confettiHideTimerRef.current);
+      }
+      confettiHideTimerRef.current = setTimeout(() => {
+        setShowConfetti(false);
+        confettiHideTimerRef.current = null;
+      }, 2800);
+      return;
+    }
+    
+    // Check for "nearly perfect" run: >= 97% accuracy, at least 4 bars, only 1 near tap, no bad taps
+    const barCount = barsData.length - 1; // exclude warmup bar
+    const hasEnoughBars = barCount >= 4;
+    const allBarsAtLeast97 = barAccuracy.every((row) => row.accuracyPct >= 97);
+    const overallAt97 = overallAccuracyPct !== null && overallAccuracyPct >= 97;
+    
+    if (!hasEnoughBars || !allBarsAtLeast97 || !overallAt97) return;
+    
+    // Count tap statuses
+    const goodCount = (tapAssessments || []).filter((a) => a.status === 'good').length;
+    const nearCount = (tapAssessments || []).filter((a) => a.status === 'near').length;
+    const badCount = (tapAssessments || []).filter((a) => a.status === 'bad').length;
+    
+    const isNearlyPerfect = goodCount > 0 && nearCount === 1 && badCount === 0;
+    
+    if (!isNearlyPerfect) return;
+    
     rewardShownRef.current = true;
     setShowConfetti(true);
     if (confettiHideTimerRef.current) {
@@ -1018,7 +1052,7 @@ export default function RhythmArea({
       setShowConfetti(false);
       confettiHideTimerRef.current = null;
     }, 2800);
-  }, [barAccuracy, running]);
+  }, [barAccuracy, running, tapAssessments, overallAccuracyPct, barsData.length]);
 
   useEffect(() => {
     return () => {
@@ -1362,25 +1396,53 @@ export default function RhythmArea({
             </div>
           )}
 
-          {onShareResults && (
-            <button
-              type="button"
+          {(onShareResults || onNext) && (
+            <div
               style={{
                 marginTop: '12px',
-                width: '100%',
-                padding: '8px 12px',
-                backgroundColor: '#10b981',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                fontSize: '14px',
+                display: 'flex',
+                gap: '8px',
               }}
-              onClick={onShareResults}
             >
-              {t.sidebar.fields.shareResults}
-            </button>
+              {onShareResults && (
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    backgroundColor: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                  }}
+                  onClick={onShareResults}
+                >
+                  {t.sidebar.fields.shareResults}
+                </button>
+              )}
+              {onNext && (
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                  }}
+                  onClick={onNext}
+                >
+                  {t.controls.next}
+                </button>
+              )}
+            </div>
           )}
 
         </div>
