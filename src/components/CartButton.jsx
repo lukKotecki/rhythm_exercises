@@ -1,7 +1,7 @@
 import React from 'react';
 
 export default function CartButton({ onClick, t }) {
-  const label = t?.menu?.cart || 'Kup kostki rytmiczne';
+  const label = t?.cart?.buttonLabel || 'Buy rhythm dice';
   return (
     <button
       className="cart-button menu-action"

@@ -1,4 +1,7 @@
-export default function CartPageTemporary() {
+export default function CartPageTemporary({ t }) {
+  const { temporary } = t.cart;
+  const emailSubject = encodeURIComponent(temporary.emailSubject);
+
   return (
     <section className="cart-temporary-page" aria-labelledby="cart-temporary-title">
       <div className="cart-temporary-orbit cart-temporary-orbit-one" aria-hidden="true" />
@@ -12,19 +15,19 @@ export default function CartPageTemporary() {
             <circle cx="18" cy="20" r="1" fill="currentColor" />
           </svg>
         </div>
-        <p className="cart-temporary-eyebrow">KOŚCI RYTMICZNE</p>
-        <h2 id="cart-temporary-title">Zamówienia przyjmujemy e-mailowo</h2>
+        <p className="cart-temporary-eyebrow">{temporary.eyebrow}</p>
+        <h2 id="cart-temporary-title">{temporary.title}</h2>
         <p className="cart-temporary-description">
-          Aby zamówić fizyczny zestaw „Kości rytmiczne”, napisz do nas — odpowiemy z informacją o dostępności i szczegółach zamówienia.
+          {temporary.orderDescription}
         </p>
-        <a className="cart-temporary-mail" href="mailto:lukkotecki@gmail.com?subject=Zamówienie%20Kości%20rytmiczne">
+        <a className="cart-temporary-mail" href={`mailto:lukkotecki@gmail.com?subject=${emailSubject}`}>
           <span aria-hidden="true">✉</span>
           lukkotecki@gmail.com
         </a>
         <div className="cart-temporary-divider" aria-hidden="true" />
-        <p className="cart-temporary-model-title">Wolisz wydrukować własny zestaw?</p>
+        <p className="cart-temporary-model-title">{temporary.modelTitle}</p>
         <p className="cart-temporary-description">
-          Model 3D kości rytmicznych do samodzielnego wydruku jest dostępny na Cults3D.
+          {temporary.modelDescription}
         </p>
         <a
           className="cart-temporary-model-link"
@@ -32,7 +35,7 @@ export default function CartPageTemporary() {
           target="_blank"
           rel="noreferrer"
         >
-          Zobacz model na Cults3D <span aria-hidden="true">↗</span>
+          {temporary.modelLink} <span aria-hidden="true">↗</span>
         </a>
       </div>
     </section>

@@ -565,7 +565,7 @@ function App() {
           {currentPage === 'instructions' && <Instructions t={t} />}
           {currentPage === 'about' && <About t={t} />}
           {currentPage === 'settings' && <Settings t={t} options={options} />}
-          {currentPage === 'cart' && <CartPageTemporary />}
+          {currentPage === 'cart' && <CartPageTemporary t={t} />}
         </div>
       </div>
     </div>

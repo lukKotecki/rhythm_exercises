@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function ProductCard({ img, title, subtitle, price, onChooseProduct }) {
+function ProductCard({ img, title, subtitle, price, onChooseProduct, buyNow }) {
   return (
     <div className="product-card">
       <div className="product-media">
@@ -11,38 +11,42 @@ function ProductCard({ img, title, subtitle, price, onChooseProduct }) {
         <div className="product-sub">{subtitle}</div>
         <div className="product-foot">
           <div className="product-price">{price}</div>
-          <button className="buy-button" onClick={onChooseProduct}>Kup teraz</button>
+          <button className="buy-button" onClick={onChooseProduct}>{buyNow}</button>
         </div>
       </div>
     </div>
   );
 }
 
-const products = [
-  {
-    id: 'basic',
-    img: '/cart1.svg',
-    title: 'Kości rytmiczne — Zestaw podstawowy',
-    subtitle: 'Kilka kostek do losowania rytmów; idealne do treningu podstaw',
-    price: '29,99 PLN',
-  },
-  {
-    id: 'expanded',
-    img: '/cart2.svg',
-    title: 'Kości rytmiczne — Zestaw rozszerzony',
-    subtitle: 'Więcej wartości rytmicznych i wariantów zaawansowanych',
-    price: '49,99 PLN',
-  },
-  {
-    id: 'collector',
-    img: '/cart3.svg',
-    title: 'Kości rytmiczne — Edycja kolekcjonerska',
-    subtitle: 'Specjalne wydanie z dodatkowymi materiałami edukacyjnymi',
-    price: '99,99 PLN',
-  },
-];
+function getProducts(store) {
+  return [
+    {
+      id: 'basic',
+      img: '/cart1.svg',
+      title: store.basicTitle,
+      subtitle: store.basicDescription,
+      price: '29,99 PLN',
+    },
+    {
+      id: 'expanded',
+      img: '/cart2.svg',
+      title: store.expandedTitle,
+      subtitle: store.expandedDescription,
+      price: '49,99 PLN',
+    },
+    {
+      id: 'collector',
+      img: '/cart3.svg',
+      title: store.collectorTitle,
+      subtitle: store.collectorDescription,
+      price: '99,99 PLN',
+    },
+  ];
+}
 
-export default function CartPage() {
+export default function CartPage({ t }) {
+  const { store } = t.cart;
+  const products = getProducts(store);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -69,7 +73,7 @@ export default function CartPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.redirectUrl) {
-        throw new Error(data.error || 'Nie udało się rozpocząć płatności.');
+        throw new Error(data.error || store.checkoutError);
       }
       window.location.assign(data.redirectUrl);
     } catch (checkoutError) {
@@ -82,8 +86,8 @@ export default function CartPage() {
     <div className="cart-page">
       <header className="cart-header">
         <div>
-          <h2>Kości rytmiczne</h2>
-          <p className="muted">Wersja demo sklepu — tymczasowe grafiki w <code>public/</code>.</p>
+          <h2>{store.title}</h2>
+          <p className="muted">{store.demoNotice}</p>
         </div>
       </header>
 
@@ -92,6 +96,7 @@ export default function CartPage() {
           <ProductCard
             key={product.id}
             {...product}
+            buyNow={store.buyNow}
             onChooseProduct={() => {
               setSelectedProduct(product);
               setError('');
@@ -103,36 +108,36 @@ export default function CartPage() {
       {selectedProduct && (
         <section className="checkout-panel" aria-labelledby="checkout-title">
           <div className="checkout-summary">
-            <span>Wybrany produkt</span>
+            <span>{store.selectedProduct}</span>
             <strong>{selectedProduct.title}</strong>
             <strong>{selectedProduct.price}</strong>
           </div>
           <form className="checkout-form" onSubmit={startCheckout}>
-            <h3 id="checkout-title">Dane do płatności</h3>
+            <h3 id="checkout-title">{store.paymentDetails}</h3>
             <label>
-              Imię i nazwisko
+              {store.name}
               <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} autoComplete="name" required />
             </label>
             <label>
-              Adres e-mail
+              {store.email}
               <input type="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} autoComplete="email" required />
             </label>
             <fieldset className="payment-methods">
-              <legend>Metoda płatności</legend>
+              <legend>{store.paymentMethod}</legend>
               <label>
                 <input type="radio" name="paymentMethod" value="blik" checked={paymentMethod === 'blik'} onChange={(event) => setPaymentMethod(event.target.value)} />
                 BLIK
               </label>
               <label>
                 <input type="radio" name="paymentMethod" value="bank-transfer" checked={paymentMethod === 'bank-transfer'} onChange={(event) => setPaymentMethod(event.target.value)} />
-                Przelew bankowy
+                {store.bankTransfer}
               </label>
             </fieldset>
-            <p className="checkout-note">Zostaniesz przekierowany(-a) do bezpiecznej bramki Przelewy24, aby dokończyć płatność.</p>
+            <p className="checkout-note">{store.paymentGatewayNotice}</p>
             {error && <p className="checkout-error" role="alert">{error}</p>}
             <div className="checkout-actions">
-              <button type="button" className="cancel-button" onClick={() => setSelectedProduct(null)}>Anuluj</button>
-              <button className="buy-button" type="submit" disabled={isSubmitting}>{isSubmitting ? 'Przekierowywanie…' : `Zapłać — ${selectedProduct.price}`}</button>
+              <button type="button" className="cancel-button" onClick={() => setSelectedProduct(null)}>{store.cancel}</button>
+              <button className="buy-button" type="submit" disabled={isSubmitting}>{isSubmitting ? store.redirecting : store.pay.replace('{price}', selectedProduct.price)}</button>
             </div>
           </form>
         </section>
