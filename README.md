@@ -72,6 +72,18 @@ npm run preview
 npm run lint
 ```
 
+## Payments: BLIK and bank transfer
+
+The product page uses PHP endpoints for a Przelewy24 checkout. It lets the buyer select **BLIK** or **bank transfer** at the hosted Przelewy24 payment page. Card data, BLIK codes, and Przelewy24 secrets are never handled by the React application.
+
+> **Before accepting any real payment:** register a Przelewy24 merchant account and complete its test-to-production activation. The exact charges depend on the merchant agreement; verify them directly with Przelewy24 before launch.
+
+### Configuration
+
+The uploadable PHP backend is in [php-backend](php-backend). Follow [php-backend/INSTRUKCJA-KONFIGURACJI.txt](php-backend/INSTRUKCJA-KONFIGURACJI.txt) to create the MySQL table in phpMyAdmin, upload files through FTP/SFTP, replace the example keys in `private/config.php`, and configure the public HTTPS webhook.
+
+The webhook verifies the transaction with Przelewy24, records the confirmed order in MySQL, and only then sends a notification to `lukkotecki@gmail.com`.
+
 ## Project Scripts
 
 | Script | Description |

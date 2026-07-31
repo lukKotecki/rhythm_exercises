@@ -1,0 +1,259 @@
+INSTRUKCJA WDROŻENIA PŁATNOŚCI PHP (BLIK / PRZELEWY24)
+=======================================================
+
+Ta integracja nie wymaga SSH ani konsoli na hostingu. Wystarczą: FTP/SFTP,
+panel hostingu z PHP 8.1+ (włączone rozszerzenia cURL i PDO MySQL), phpMyAdmin
+oraz aktywny certyfikat HTTPS.
+
+WAŻNE: najpierw używaj sandboxa Przelewy24. Nie aktywuj prawdziwych płatności,
+dopóki checkout, webhook i powiadomienie e-mail nie przejdą testów.
+
+1. UTWÓRZ BAZĘ DANYCH
+---------------------
+1) Otwórz panel hostingu i przejdź do phpMyAdmin.
+2) Utwórz nową bazę MySQL, np. rhythm_shop.
+3) Wejdź do tej bazy, wybierz zakładkę SQL.
+4) Wklej i uruchom zawartość pliku private/schema.sql.
+5) Zapisz nazwę bazy, użytkownika, hasło i host MySQL. Te dane są potrzebne
+   w kroku 3.
+
+2. WGRYJ PLIKI PRZEZ FTP/SFTP LUB MENEDŻER PLIKÓW
+-------------------------------------------------
+Układ lokalny w repozytorium:
+  php-backend/
+    public/api/checkout.php
+    public/api/status.php
+    public/api/bootstrap.php
+    private/config.php
+    private/schema.sql
+
+Na hostingu zastosuj układ:
+  /katalog-nad-public_html/private/config.php
+  /public_html/api/checkout.php
+  /public_html/api/status.php
+  /public_html/api/bootstrap.php
+
+Najczęściej publiczny katalog strony nazywa się public_html, htdocs lub www.
+Plik config.php MUSI znaleźć się poza tym katalogiem. Nie wgrywaj do public_html
+pliku schema.sql ani config.php.
+
+Jeżeli hosting nie pozwala zapisywać plików nad public_html, utwórz katalog
+private w katalogu głównym konta przez menedżer plików. Jeżeli nie jest to
+możliwe, skontaktuj się z pomocą hostingu i poproś o bezpieczną lokalizację
+na konfigurację PHP poza webrootem.
+
+3. UZUPEŁNIJ KONFIGURACJĘ
+-------------------------
+Edytuj plik private/config.php przez panel hostingu lub lokalnie przed uploadem.
+ZASTĄP każdą wartość zawierającą „REPLACE”, „YOUR_” lub „example-”.
+Komentarz po każdej wartości informuje, skąd ją pobrać.
+
+Dla testów:
+  p24_base_url = https://sandbox.przelewy24.pl
+
+Po zakończeniu testów i aktywacji sklepu:
+  p24_base_url = https://secure.przelewy24.pl
+
+Ustaw rzeczywiste adresy, np.:
+  p24_status_url = https://twoja-domena.pl/api/status.php
+  frontend_url   = https://twoja-domena.pl
+
+Adres p24_status_url musi działać przez publiczny HTTPS i wskazywać dokładnie
+na status.php. Przelewy24 wywoła ten adres po ukończeniu płatności.
+
+W notification_email jest już adres: lukkotecki@gmail.com.
+Ustaw mail_from na istniejący adres w swojej domenie, np. sklep@twoja-domena.pl.
+
+4. USTAW DANE PRZELEWY24
+------------------------
+1) Załóż konto merchant w Przelewy24 i włącz środowisko testowe.
+2) W panelu Przelewy24 pobierz: Merchant ID, POS ID, API key i CRC key.
+3) Wpisz je odpowiednio do p24_merchant_id, p24_pos_id, p24_api_key i p24_crc
+   w private/config.php.
+4) W panelu Przelewy24 ustaw URL statusu/notyfikacji na:
+   https://twoja-domena.pl/api/status.php
+5) Ustaw adres powrotu na domenę sklepu, jeśli panel Przelewy24 tego wymaga.
+
+Wybór BLIK albo przelewu jest dokonywany w hostowanej bramce Przelewy24.
+Aplikacja nie przetwarza kodu BLIK ani danych bankowych.
+
+5. SKONFIGURUJ WYSYŁKĘ E-MAIL
+-----------------------------
+Kod używa wbudowanej funkcji PHP mail(). Większość hostingów obsługuje ją,
+ale najpierw przeprowadź test płatności sandbox i sprawdź skrzynkę
+lukkotecki@gmail.com (również Spam).
+
+Jeżeli e-mail nie dochodzi:
+- upewnij się, że mail_from istnieje w Twojej domenie;
+- sprawdź w panelu hostingu, czy funkcja mail() jest włączona;
+- ustaw rekordy SPF/DKIM dla domeny wysyłającej;
+- poproś hosting o konfigurację SMTP albo zleć zamianę funkcji mail() na
+  PHPMailer z SMTP (zalecane przy większej liczbie zamówień).
+
+6. PRZETESTUJ
+------------
+1) Otwórz https://twoja-domena.pl/api/checkout.php w przeglądarce.
+   Powinien pojawić się komunikat JSON „Method not allowed.” — oznacza to,
+   że plik działa i oczekuje poprawnego POST z aplikacji.
+2) Otwórz stronę sklepu, wybierz produkt, podaj dane i kliknij Zapłać.
+3) Powinieneś(-naś) zostać przekierowany(-a) na sandbox Przelewy24.
+4) Ukończ płatność testową metodą dostępną w sandboxie.
+5) W phpMyAdmin sprawdź tabelę orders: payment_status powinien mieć wartość
+   paid, a p24_order_id powinien być zapisany.
+6) Sprawdź e-mail na lukkotecki@gmail.com.
+
+7. PRZEŁĄCZENIE NA PRODUKCJĘ
+----------------------------
+1) Aktywuj konto produkcyjne Przelewy24.
+2) Podmień sandboxowe klucze na produkcyjne w private/config.php.
+3) Zmień p24_base_url na https://secure.przelewy24.pl.
+4) Sprawdź ponownie p24_status_url i HTTPS.
+5) Wykonaj małą prawdziwą płatność testową.
+
+BEZPIECZEŃSTWO
+--------------
+- Nigdy nie publikuj private/config.php ani danych Przelewy24 w GitHubie.
+- Nie umieszczaj config.php w public_html.
+- Zachowaj HTTPS dla całej domeny.
+- Ceny są ustalane na serwerze PHP, nie w przeglądarce.
+- Nie usuń tabeli orders — chroni przed podwójnymi powiadomieniami webhooka.
+- Regularnie wykonuj backup bazy przez panel hostingu.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Aby uruchomić prawdziwe płatności, wykonaj poniższe kroki.
+
+1. Załóż konto sprzedawcy Przelewy24
+Zarejestruj działalność/konto firmowe wymagane przez Przelewy24.
+Podpisz umowę i aktywuj konto produkcyjne.
+W panelu Przelewy24 pobierz:
+P24_MERCHANT_ID,
+P24_POS_ID,
+P24_API_KEY,
+P24_CRC.
+Najpierw użyj danych sandboxa, aby przetestować BLIK i przelewy bez prawdziwych obciążeń.
+Przelewy24 obsługuje wybór BLIK oraz przelewów bankowych na swojej hostowanej stronie płatności. Kod BLIK nie trafia do aplikacji, co jest właściwym i bezpiecznym modelem integracji.
+
+2. Skonfiguruj prywatny plik środowiskowy
+Skopiuj .env.example do pliku .env w głównym katalogu projektu. Ten plik jest ignorowany przez Git, więc nie powinien zostać opublikowany.
+
+Uzupełnij między innymi:
+
+
+3. Skonfiguruj wysyłkę e-maili
+Najlepiej użyć dostawcy SMTP, np. Brevo, Mailgun, SendGrid lub SMTP własnej domeny.
+
+Jeśli wykorzystasz Gmail:
+
+włącz uwierzytelnianie dwuetapowe;
+wygeneruj hasło do aplikacji;
+wpisz je jako MAIL_PASSWORD;
+nie używaj zwykłego hasła do konta Google.
+Po zweryfikowaniu płatności webhook w index.js wyśle informację o zakupie na lukkotecki@gmail.com.
+
+4. Uruchom lokalne testy
+W dwóch osobnych terminalach:
+
+
+
+Następnie wejdź w stronę sklepu, wybierz produkt i rozpocznij testową płatność. Przed testami webhooków lokalny serwer musi być dostępny z internetu — użyj bezpiecznego tunelu HTTPS, np. Cloudflare Tunnel lub ngrok, i wpisz jego adres w P24_STATUS_URL.
+
+Przykład:
+
+
+5. Wdróż frontend i backend
+Do produkcji potrzebujesz dwóch elementów:
+
+frontend Vite zbudowany przez:
+
+działający serwer Node z index.js:
+
+Serwer płatności musi mieć publiczny adres HTTPS, np.:
+
+
+Skonfiguruj reverse proxy, aby ścieżka /api z domeny aplikacji kierowała do serwera płatności albo udostępnij serwer API pod osobną subdomeną.
+
+6. Dodaj trwałą bazę zamówień — konieczne przed produkcją
+Obecny kod zabezpiecza przed wielokrotnym e-mailem tylko w pamięci procesu. Po restarcie serwera ta pamięć znika.
+
+Przed uruchomieniem sklepu produkcyjnie należy dodać bazę danych, np. PostgreSQL, Supabase lub SQLite, i zapisywać:
+
+identyfikator sesji płatności Przelewy24;
+produkt oraz cenę;
+e-mail kupującego;
+status płatności;
+numer zamówienia Przelewy24;
+informację, czy e-mail z powiadomieniem został już wysłany.
+Dopiero po udanej weryfikacji webhooka należy oznaczyć zamówienie jako opłacone i wysłać pojedyncze powiadomienie.
+
+7. Przetestuj scenariusze płatności
+W sandboxie sprawdź:
+
+poprawną płatność BLIK;
+poprawny przelew bankowy;
+anulowanie płatności;
+błędne dane formularza;
+wielokrotne wysłanie webhooka;
+niedostępny serwer SMTP;
+ponowne uruchomienie serwera;
+zgodność kwoty — cena musi zawsze pochodzić z backendu, nie z przeglądarki.
+Aktualny backend pobiera ceny po productId po swojej stronie, co zapobiega zmianie kwoty przez użytkownika w przeglądarce.
+
+8. Przygotuj kwestie formalne
+Przed prawdziwą sprzedażą opublikuj na stronie:
+
+regulamin sklepu;
+politykę prywatności / RODO;
+zasady dostawy i zwrotów;
+dane sprzedawcy;
+procedurę reklamacji;
+informacje o cenach brutto, dostawie i ewentualnych fakturach.
+Warto też ustalić z księgowością zasady dokumentowania sprzedaży i fakturowania.
+
+Najważniejsza brakująca część techniczna przed uruchomieniem produkcyjnym to trwała baza zamówień oraz publiczny HTTPS webhook dla Przelewy24.
+
+
+
+
+
+
+
+
+
+
+czy implementacja tej płatności będzie wymagała dostępu do backendu na serwerze
+
+Tak — wymagana jest dostępna instancja backendu na serwerze.
+
+Dlaczego: klucze/sekrety Przelewy24 i dane SMTP nie mogą być w przeglądarce; backend:
+tworzy i podpisuje żądania do Przelewy24,
+odbiera i weryfikuje webhooki statusu płatności,
+bezpiecznie wysyła e‑maile (SMTP),
+przechowuje stan zamówień / zapobiega duplikatom.
+Wymagania minimalne:
+publiczny HTTPS endpoint (webhook musi być osiągalny przez Przelewy24),
+konfiguracja środowiskowa w .env z P24_* i MAIL_*,
+uruchomiony serwer backendu (lokalnie: npm run dev:payments, produkcyjnie: npm run start:payments).
+Do testów lokalnych: użyj tunelu HTTPS (ngrok, Cloudflare Tunnel) i ustaw P24_STATUS_URL na adres tunelu.
+Dodatkowo zalecane przed produkcją: trwała baza zamówień (DB) oraz zabezpieczenia i monitoring webhooków.
+Chcesz, że przygotuję instrukcję krok‑po‑kroku dla wdrożenia backendu na konkretnym hostingu (np. DigitalOcean, Railway, Vercel + serverless webhook)?

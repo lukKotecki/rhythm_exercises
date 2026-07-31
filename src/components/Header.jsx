@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import CartButton from './CartButton.jsx';
 
 export default function Header({
   t,
@@ -70,6 +71,14 @@ export default function Header({
       </div>
 
       <div className="header-right">
+        <CartButton
+          t={t}
+          onClick={() => {
+            setMenuOpen(false);
+            if (onChangePage) onChangePage(currentPage === 'cart' ? 'home' : 'cart');
+            if (onRequestMainFocus) onRequestMainFocus();
+          }}
+        />
         <button
           className="menu-toggle"
           onClick={handleToggleMenu}

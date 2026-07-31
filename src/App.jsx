@@ -5,6 +5,7 @@ import RhythmArea from './components/RhythmArea.jsx';
 import Instructions from './components/Instructions.jsx';
 import About from './components/About.jsx';
 import Settings from './components/Settings.jsx';
+import CartPageTemporary from './components/CartPageTemporary.jsx';
 import { LANGUAGE_STORAGE_KEY, TRANSLATIONS } from './i18n.js';
 import './App.css';
 
@@ -564,6 +565,7 @@ function App() {
           {currentPage === 'instructions' && <Instructions t={t} />}
           {currentPage === 'about' && <About t={t} />}
           {currentPage === 'settings' && <Settings t={t} options={options} />}
+          {currentPage === 'cart' && <CartPageTemporary />}
         </div>
       </div>
     </div>

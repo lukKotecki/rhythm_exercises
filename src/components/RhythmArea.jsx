@@ -454,8 +454,8 @@ export default function RhythmArea({
   const rewardShownRef = useRef(false);
   const recordedRunRef = useRef(false);
   const confettiHideTimerRef = useRef(null);
-  const [currentBeat, setCurrentBeat] = useState(-1);
-  const [currentBar, setCurrentBar] = useState(-1);
+  const [activeBeatPosition, setActiveBeatPosition] = useState({ bar: -1, beat: -1 });
+  const { bar: currentBar, beat: currentBeat } = activeBeatPosition;
   const barsContainerRef = useRef(null);
   const barWrapperRefs = useRef([]);
   const barStartsNewLineRef = useRef([]);
@@ -473,6 +473,12 @@ export default function RhythmArea({
   // timing lookup built when barsData changes
   const timingMapRef = useRef({ beatsPerBar: 4, beatDuration: 1, slotsPerBeat: 12, barStarts: [], barEnds: [] });
   const [totalDuration, setTotalDuration] = useState(0);
+
+  function setActiveBeat(bar, beat) {
+    setActiveBeatPosition((previous) => (
+      previous.bar === bar && previous.beat === beat ? previous : { bar, beat }
+    ));
+  }
 
   // Build per-bar expected slot sets and timing map whenever barsData / accuracy setting changes
   useEffect(() => {
@@ -561,33 +567,48 @@ export default function RhythmArea({
   }, [settingsResetToken]);
 
   async function ensureAudioReady() {
-    if (!audioCtx.current) {
-      audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+
+    if (!audioCtx.current || audioCtx.current.state === 'closed') {
+      audioCtx.current = new AudioContextClass();
+      audioPrimedRef.current = false;
     }
-    if (audioCtx.current.state === 'suspended') {
+
+    const ctx = audioCtx.current;
+    if (ctx.state !== 'running') {
       try {
-        await audioCtx.current.resume();
+        await ctx.resume();
       } catch {
-        // Keep trying on next user interaction.
+        // A mobile browser may reject this outside a trusted user gesture.
       }
     }
+
+    // Do not schedule sound against a suspended context. A future tap retries it.
+    if (ctx.state !== 'running') return null;
+
     if (!audioPrimedRef.current) {
-      const osc = audioCtx.current.createOscillator();
-      const gain = audioCtx.current.createGain();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       gain.gain.value = 0.0001;
       osc.connect(gain);
-      gain.connect(audioCtx.current.destination);
+      gain.connect(ctx.destination);
       osc.start();
-      osc.stop(audioCtx.current.currentTime + 0.01);
+      osc.stop(ctx.currentTime + 0.01);
       audioPrimedRef.current = true;
     }
-    return audioCtx.current;
+    return ctx;
   }
 
   async function startMetronome() {
     const startToken = ++startTokenRef.current;
     const ctx = await ensureAudioReady();
     if (startToken !== startTokenRef.current) return;
+    if (!ctx) {
+      // Keep the visual timeline from running without audio on mobile browsers.
+      if (onPause) onPause();
+      return;
+    }
 
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -647,6 +668,10 @@ export default function RhythmArea({
     const totalBeats = beatsPerBar * barsData.length;
     const schedulePendingBeats = () => {
       if (startToken !== startTokenRef.current) return;
+      if (ctx.state !== 'running') {
+        stopMetronome();
+        return;
+      }
       const scheduleLookAheadSec = 0.12;
       while (beat < totalBeats && nextBeatAudioTime <= ctx.currentTime + scheduleLookAheadSec) {
         const beatInBar = beat % beatsPerBar;
@@ -667,6 +692,10 @@ export default function RhythmArea({
 
     // start animation frame for elapsed
     function update() {
+      if (startToken !== startTokenRef.current || ctx.state !== 'running') {
+        if (startToken === startTokenRef.current) stopMetronome();
+        return;
+      }
       const rawElapsed = ctx.currentTime - startTimeRef.current;
       const currentElapsed = Math.max(resumeFrom, rawElapsed);
       const previousElapsed = lastAudioElapsedRef.current;
@@ -674,8 +703,7 @@ export default function RhythmArea({
       const { barStarts: tmBarStarts, barEnds: tmBarEnds, beatDuration: tmBeatDuration } = timingMapRef.current;
 
       if (rawElapsed < 0 && resumeFrom <= 0) {
-        setCurrentBeat(-1);
-        setCurrentBar(-1);
+        setActiveBeat(-1, -1);
         setElapsed(0);
         rafRef.current = requestAnimationFrame(update);
         return;
@@ -685,8 +713,7 @@ export default function RhythmArea({
         finishedNaturallyRef.current = true;
         lastAudioElapsedRef.current = exerciseTotalDuration;
         setElapsed(exerciseTotalDuration);
-        setCurrentBeat(-1);
-        setCurrentBar(-1);
+        setActiveBeat(-1, -1);
         stopMetronome();
         return;
       }
@@ -694,11 +721,9 @@ export default function RhythmArea({
       const activeBarIndex = tmBarStarts.findIndex((start, idx) => currentElapsed >= start && currentElapsed < tmBarEnds[idx]);
       if (activeBarIndex >= 0) {
         const beatInBar = Math.max(0, Math.floor((currentElapsed - tmBarStarts[activeBarIndex]) / (tmBeatDuration || 1)));
-        setCurrentBar(activeBarIndex);
-        setCurrentBeat(Math.min(beatsPerBar - 1, beatInBar));
+        setActiveBeat(activeBarIndex, Math.min(beatsPerBar - 1, beatInBar));
       } else {
-        setCurrentBar(-1);
-        setCurrentBeat(-1);
+        setActiveBeat(-1, -1);
       }
 
       // Trigger rhythm sound exactly when progress crosses expected rhythm positions.
@@ -892,13 +917,15 @@ export default function RhythmArea({
 
   // Prime audio engine on first user gesture to avoid initial click latency.
   useEffect(() => {
-    const prime = () => {
+      const prime = () => {
       void ensureAudioReady();
     };
-    window.addEventListener('pointerdown', prime, { passive: true });
+    window.addEventListener('pointerdown', prime);
+    window.addEventListener('touchstart', prime);
     window.addEventListener('keydown', prime);
     return () => {
       window.removeEventListener('pointerdown', prime);
+      window.removeEventListener('touchstart', prime);
       window.removeEventListener('keydown', prime);
     };
   }, []);
@@ -961,8 +988,7 @@ export default function RhythmArea({
     setOverallAccuracyPct(null);
     setShowConfetti(false);
     setElapsed(0);
-    setCurrentBeat(-1);
-    setCurrentBar(-1);
+    setActiveBeat(-1, -1);
     finishedNaturallyRef.current = false;
     rewardShownRef.current = false;
     calibrationSentRef.current = false;
