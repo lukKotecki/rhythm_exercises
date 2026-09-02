@@ -156,30 +156,33 @@
   }
 }
 
-.menu-toggle {
-  font-size: 1.5rem;
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-/* Cart button spacing and base reset to match header buttons */
+.header-icon-button,
 .cart-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
   background: none;
   border: none;
   color: inherit;
   cursor: pointer;
-  margin-right: 0.5rem;
-  padding: 0.25rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
+.header-icon-button {
+  font-size: 1.5rem;
+}
+
+.cart-button {
+  margin-right: 0;
+}
+
 @media (max-width: 767px) {
+  .header-icon-button,
   .cart-button {
-    margin-right: 0.25rem;
+    width: 2rem;
+    height: 2rem;
   }
 }
 

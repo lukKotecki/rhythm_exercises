@@ -80,9 +80,24 @@ export default function Header({
           }}
         />
         <button
-          className="menu-toggle"
+          className="header-icon-button"
+          onClick={() => {
+            setMenuOpen(false);
+            onChangePage('home');
+            if (onRequestMainFocus) onRequestMainFocus();
+          }}
+          aria-label={t.nav.home}
+          title={t.nav.home}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <button
+          className="header-icon-button"
           onClick={handleToggleMenu}
           aria-label={t.menu.toggleMenu}
+          title={t.menu.toggleMenu}
         >
           ☰
         </button>
